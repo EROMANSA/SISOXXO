@@ -163,7 +163,7 @@ function LoginPage() {
                         color: '#64748B'
                     }}
                 >
-                    Gestión de proveedores
+                    Gestión de Despachos
                 </p>
 
                 <form onSubmit={handleSubmit}>

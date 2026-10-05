@@ -97,7 +97,7 @@ function Sidebar() {
                     marginBottom: '25px'
                 }}
             >
-                Gestión de proveedores
+                Gestión de Despachos
             </div>
 
 
