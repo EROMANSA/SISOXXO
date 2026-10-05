@@ -86,13 +86,7 @@ const crearDespacho = async (req, res) => {
                 return res.status(400).json({
                     ok: false,
                     mensaje: 'El proveedor no es válido.'
-                });
-
-            case 'TIPO_RUBRO_REQUERIDO':
-                return res.status(400).json({
-                    ok: false,
-                    mensaje: 'El Tipo Rubro es obligatorio.'
-                });
+                });            
 
             case 'DESTINO_REQUERIDO':
                 return res.status(400).json({

@@ -62,8 +62,7 @@ const listarDespachos = async (proveedorId) => {
 };
 
 const crearDespacho = async ({
-    proveedorId,
-    tipoRubro,
+    proveedorId,    
     destinoId,
     fechaProgramacion,
     observaciones,

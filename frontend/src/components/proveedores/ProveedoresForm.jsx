@@ -95,18 +95,17 @@ const ProveedorForm = ({
     listarTiposDocSanitaria()
 ]);
 
-            setTiposRubro(responseTipoRubro.data || []);
-            setTiposDocumento(responseTipoDocumento.data || []);
-            setCiiu(responseCiiu.data || []);
+setTiposRubro(responseTipoRubro.data || []);
+setTiposDocumento(responseTipoDocumento.data || []);
+setCiiu(responseCiiu.data || []);
 
-            setRegimenesTributarios(
-                responseRegimen.data || []
-            );
+setRegimenesTributarios(
+    responseRegimen.data || []
+);
 
-            setTiposDocSanitaria(
-                responseDocSanitaria.data || []
-            );
-
+setTiposDocSanitaria(
+    responseDocSanitaria.data || []
+);
         } catch (error) {
 
             console.error(

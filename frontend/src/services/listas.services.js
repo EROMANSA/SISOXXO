@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+/*const API_URL = import.meta.env.VITE_API_URL;*/
+const API_URL = `${import.meta.env.VITE_API_URL}/listas`;
 
 export const listarTiposRubro = async () => {
     const response = await axios.get(
@@ -38,6 +39,7 @@ export const listarCiiu = async () => {
     const response = await axios.get(
         `${API_URL}/ciiu`
     );
+    return response.data;
 };
 
     export const listarTiposTransaccion = async () => {
