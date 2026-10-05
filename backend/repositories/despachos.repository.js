@@ -1,5 +1,10 @@
 const pool = require('../config/database');
 
+
+// ============================================================
+// LISTAR DESPACHOS
+// ============================================================
+
 const listarDespachos = async (proveedorId) => {
 
     const query = `
@@ -61,11 +66,16 @@ const listarDespachos = async (proveedorId) => {
     return result.rows;
 };
 
+
+// ============================================================
+// CREAR DESPACHO - CABECERA + DETALLE
+// ============================================================
 const crearDespacho = async ({
-    proveedorId,    
+    proveedorId,
     destinoId,
     fechaProgramacion,
     observaciones,
+    detalles,
     usuarioId
 }) => {
 
@@ -76,59 +86,71 @@ const crearDespacho = async ({
         await client.query('BEGIN');
 
         /*
-         * Bloqueo transaccional para garantizar
-         * la generación segura del correlativo.
+         * ========================================================
+         * BLOQUEO TRANSACCIONAL
+         * ========================================================
+         *
+         * Garantiza la generación segura del transac_id
+         * cuando existen operaciones concurrentes.
          */
         await client.query(`
             SELECT pg_advisory_xact_lock(74839201)
         `);
 
+
         /*
-         * Obtener siguiente transac_id
+         * ========================================================
+         * OBTENER SIGUIENTE TRANSAC_ID
+         * ========================================================
          */
         const resultCorrelativo = await client.query(`
-            SELECT COALESCE(MAX(transac_id), 0) + 1 AS transac_id
+            SELECT
+                COALESCE(MAX(transac_id), 0) + 1 AS transac_id
             FROM sisoxxo."MOV_TRANSACCIONES"
         `);
 
         const transacId =
             resultCorrelativo.rows[0].transac_id;
 
+
         /*
-         * Crear cabecera del despacho
+         * ========================================================
+         * CREAR CABECERA DEL DESPACHO
+         * ========================================================
          *
          * Valores iniciales definidos por negocio:
+         *
          * tipo_transaccion = PRG
          * estado_despacho = PRO
          * periodo         = NULL
          */
-        const query = `
+        const queryCabecera = `
             INSERT INTO sisoxxo."MOV_TRANSACCIONES" (
-    transac_id,
-    proveedor_id,
-    destino_id,
-    tipo_transaccion,
-    fecha_programacion,
-    estado_despacho,
-    observaciones,
-    periodo,
-    create_by
-)
-VALUES (
-    $1,
-    $2,
-    $3,
-    'PRG',
-    $4,
-    'PRO',
-    $5,
-    NULL,
-    $6
-)
+                transac_id,
+                proveedor_id,
+                destino_id,
+                tipo_transaccion,
+                fecha_programacion,
+                estado_despacho,
+                observaciones,
+                periodo,
+                create_by
+            )
+            VALUES (
+                $1,
+                $2,
+                $3,
+                'PRG',
+                $4,
+                'PRO',
+                $5,
+                NULL,
+                $6
+            )
             RETURNING
                 transac_id,
                 proveedor_id,
-                destino_id,                
+                destino_id,
                 tipo_transaccion,
                 fecha_programacion,
                 estado_despacho,
@@ -142,24 +164,209 @@ VALUES (
                 update_by
         `;
 
-        const result = await client.query(query, [
-            transacId,
-            proveedorId,
-            destinoId,            
-            fechaProgramacion,
-            observaciones,
-            usuarioId
-        ]);
+        const resultCabecera = await client.query(
+            queryCabecera,
+            [
+                transacId,
+                proveedorId,
+                destinoId,
+                fechaProgramacion,
+                observaciones,
+                usuarioId
+            ]
+        );
 
+
+        /*
+         * ========================================================
+         * CREAR DETALLE DEL DESPACHO
+         * ========================================================
+         *
+         * linea_id es generado por el backend.
+         *
+         * No se utiliza el linea_id enviado desde el frontend,
+         * ya que forma parte de la clave primaria compuesta:
+         *
+         * (transac_id, linea_id)
+         */
+        const queryDetalle = `
+            INSERT INTO sisoxxo."MOV_TRANSAC_DETALLE" (
+                transac_id,
+                linea_id,
+                fecha_despacho,
+                producto_especie,
+                cantidad,
+                tipo_unid_med,
+                fecha_beneficio_ini,
+                fecha_beneficio_fin,
+                nro_guia_nota_venta,
+                terminal_origen,
+                temperatura_descarga,
+                registro_sanitario,
+                fecha_registro_ini,
+                fecha_registro_fin,
+                procedencia,
+                tipo_despacho,
+                fecha_cosecha,
+                fecha_ingreso,
+                codigo_nro_lote,
+                fecha_lote_venci,
+                observaciones,
+                estado_despacho,
+                create_by
+            )
+            VALUES (
+                $1,
+                $2,
+                NULL,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8,
+                $9,
+                $10,
+                $11,
+                $12,
+                $13,
+                $14,
+                $15,
+                $16,
+                $17,
+                $18,
+                $19,
+                $20,
+                'PRO',
+                $21
+            )
+            RETURNING
+                transac_id,
+                linea_id,
+                fecha_despacho,
+                producto_especie,
+                cantidad,
+                tipo_unid_med,
+                fecha_beneficio_ini,
+                fecha_beneficio_fin,
+                nro_guia_nota_venta,
+                terminal_origen,
+                temperatura_descarga,
+                registro_sanitario,
+                fecha_registro_ini,
+                fecha_registro_fin,
+                procedencia,
+                tipo_despacho,
+                fecha_cosecha,
+                fecha_ingreso,
+                codigo_nro_lote,
+                fecha_lote_venci,
+                observaciones,
+                estado_despacho,
+                create_by,
+                create_date,
+                last_update,
+                update_by
+        `;
+
+
+        const detallesCreados = [];
+
+
+        /*
+         * Si existen líneas, se insertan una por una
+         * dentro de la misma transacción.
+         */
+        for (let i = 0; i < detalles.length; i++) {
+
+            const detalle = detalles[i];
+
+            const resultDetalle = await client.query(
+                queryDetalle,
+                [
+                    transacId,
+                    i + 1,
+
+                    detalle.producto_especie || null,
+                    detalle.cantidad !== ''
+                        && detalle.cantidad !== undefined
+                        && detalle.cantidad !== null
+                        ? Number(detalle.cantidad)
+                        : null,
+
+                    detalle.tipo_unid_med || null,
+
+                    detalle.fecha_beneficio_ini || null,
+                    detalle.fecha_beneficio_fin || null,
+
+                    detalle.nro_guia_nota_venta || null,
+
+                    detalle.terminal_origen || null,
+                    detalle.temperatura_descarga || null,
+
+                    detalle.registro_sanitario || null,
+
+                    detalle.fecha_registro_ini || null,
+                    detalle.fecha_registro_fin || null,
+
+                    detalle.procedencia || null,
+
+                    detalle.tipo_despacho || null,
+
+                    detalle.fecha_cosecha || null,
+                    detalle.fecha_ingreso || null,
+
+                    detalle.codigo_nro_lote || null,
+                    detalle.fecha_lote_venci || null,
+
+                    detalle.observaciones || null,
+
+                    usuarioId
+                ]
+            );
+
+            detallesCreados.push(
+                resultDetalle.rows[0]
+            );
+
+        }
+
+
+        /*
+         * ========================================================
+         * CONFIRMAR TRANSACCIÓN
+         * ========================================================
+         *
+         * Si llegamos hasta aquí:
+         *
+         * - Cabecera creada correctamente
+         * - Todas las líneas creadas correctamente
+         *
+         * Por lo tanto se confirma toda la operación.
+         */
         await client.query('COMMIT');
 
-        return result.rows[0];
+
+        return {
+            cabecera: resultCabecera.rows[0],
+            detalles: detallesCreados
+        };
+
 
     } catch (error) {
 
+        /*
+         * ========================================================
+         * ROLLBACK
+         * ========================================================
+         *
+         * Si falla la cabecera o cualquiera de las líneas,
+         * se revierte TODA la operación.
+         */
         await client.query('ROLLBACK');
 
         throw error;
+
 
     } finally {
 
@@ -167,6 +374,13 @@ VALUES (
 
     }
 };
+
+
+
+
+// ============================================================
+// OBTENER DESPACHO POR ID
+// ============================================================
 
 const obtenerDespachoPorId = async (transacId, proveedorId) => {
 
@@ -241,9 +455,11 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
         [transacId, proveedorId]
     );
 
+
     if (resultCabecera.rows.length === 0) {
         return null;
     }
+
 
     // ============================================================
     // DETALLE DEL DESPACHO
@@ -322,6 +538,7 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
         [transacId]
     );
 
+
     return {
         cabecera: resultCabecera.rows[0],
         detalles: resultDetalle.rows
@@ -329,8 +546,9 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
 };
 
 
-
-
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
     listarDespachos,

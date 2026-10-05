@@ -12,6 +12,10 @@ import {
     listarTiposDespacho
 } from '../../services/listas.services';
 
+import {
+    crearDespacho
+} from '../../services/despachos.services';
+
 
 const estilos = {
 
@@ -398,6 +402,9 @@ const DespachoNuevoPage = () => {
     const [error, setError] =
         useState('');
 
+    const [guardando, setGuardando] =
+    useState(false);    
+
 
     useEffect(() => {
 
@@ -510,7 +517,13 @@ const DespachoNuevoPage = () => {
     const agregarLinea = () => {
 
         const nuevoLineaId =
-            lineas.length + 1;
+    lineas.length > 0
+        ? Math.max(
+            ...lineas.map(
+                (linea) => Number(linea.linea_id) || 0
+            )
+        ) + 1
+        : 1;
 
         setLineas([
             ...lineas,
@@ -556,6 +569,140 @@ const DespachoNuevoPage = () => {
         );
 
     };
+
+    const guardarDespacho = async () => {
+
+    setError('');
+
+    if (!destinoId) {
+        setError('Debe seleccionar el destino OXXO.');
+        return;
+    }
+
+    if (lineas.length === 0) {
+        setError('Debe registrar al menos una línea de detalle.');
+        return;
+    }
+
+    for (const linea of lineas) {
+
+        if (!linea.producto_especie?.trim()) {
+            setError(
+                `Debe ingresar el Producto / Especie de la línea ${linea.linea_id}.`
+            );
+            return;
+        }
+
+        if (
+            linea.cantidad === '' ||
+            linea.cantidad === null ||
+            Number(linea.cantidad) < 0
+        ) {
+            setError(
+                `La cantidad de la línea ${linea.linea_id} no es válida.`
+            );
+            return;
+        }
+
+        if (!linea.tipo_unid_med) {
+            setError(
+                `Debe seleccionar la Unidad de Medida de la línea ${linea.linea_id}.`
+            );
+            return;
+        }
+    }
+
+    try {
+
+        setGuardando(true);
+
+        const detalles = lineas.map((linea) => ({
+            producto_especie: linea.producto_especie?.trim() || null,
+            cantidad:
+                linea.cantidad === ''
+                    ? null
+                    : Number(linea.cantidad),
+            tipo_unid_med: linea.tipo_unid_med || null,
+
+            terminal_origen:
+                linea.terminal_origen?.trim() || null,
+
+            temperatura_descarga:
+                linea.temperatura_descarga?.trim() || null,
+
+            fecha_beneficio_ini:
+                linea.fecha_beneficio_ini || null,
+
+            fecha_beneficio_fin:
+                linea.fecha_beneficio_fin || null,
+
+            nro_guia_nota_venta:
+                linea.nro_guia_nota_venta?.trim() || null,
+
+            registro_sanitario:
+                linea.registro_sanitario?.trim() || null,
+
+            fecha_registro_ini:
+                linea.fecha_registro_ini || null,
+
+            fecha_registro_fin:
+                linea.fecha_registro_fin || null,
+
+            procedencia:
+                linea.procedencia?.trim() || null,
+
+            tipo_despacho:
+                linea.tipo_despacho || null,
+
+            fecha_cosecha:
+                linea.fecha_cosecha || null,
+
+            fecha_ingreso:
+                linea.fecha_ingreso || null,
+
+            codigo_nro_lote:
+                linea.codigo_nro_lote?.trim() || null,
+
+            fecha_lote_venci:
+                linea.fecha_lote_venci || null,
+
+            observaciones:
+                linea.observaciones?.trim() || null
+        }));
+
+        const payload = {
+            destinoId,
+            fechaProgramacion:
+                fechaProgramacion || null,
+            observaciones:
+                observaciones?.trim() || null,
+            detalles
+        };
+
+        await crearDespacho(payload);
+
+        navigate('/despachos');
+
+    } catch (err) {
+
+        console.error(
+            'Error al guardar despacho:',
+            err
+        );
+
+        const mensaje =
+            err?.response?.data?.mensaje ||
+            err?.response?.data?.error ||
+            'No fue posible guardar el despacho.';
+
+        setError(mensaje);
+
+    } finally {
+
+        setGuardando(false);
+
+    }
+};
 
 
     if (cargando) {
@@ -1138,18 +1285,19 @@ const DespachoNuevoPage = () => {
 
 
                 <button
-                    type="button"
-                    style={
-                        estilos.botonGuardar
-                    }
-                    onClick={() => {
-                        setError(
-                            'El guardado de cabecera y detalle se implementará en el siguiente paso.'
-                        );
-                    }}
-                >
-                    Guardar Despacho
-                </button>
+    type="button"
+    style={{
+        ...estilos.botonGuardar,
+        opacity: guardando ? 0.6 : 1,
+        cursor: guardando ? 'not-allowed' : 'pointer'
+    }}
+    onClick={guardarDespacho}
+    disabled={guardando}
+>
+    {guardando
+        ? 'Guardando...'
+        : 'Guardar Despacho'}
+</button>
 
             </div>
 
