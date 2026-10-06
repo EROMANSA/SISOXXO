@@ -375,8 +375,432 @@ const crearDespacho = async ({
     }
 };
 
+const actualizarDespacho = async ({
+    transacId,
+    proveedorId,
+    destinoId,
+    fechaProgramacion,
+    observaciones,
+    detalles,
+    usuarioId
+}) => {
+
+    const client = await pool.connect();
+
+    try {
+
+        // ========================================================
+        // INICIAR TRANSACCIÓN
+        // ========================================================
+
+        await client.query('BEGIN');
 
 
+        // ========================================================
+        // BLOQUEO TRANSACCIONAL
+        // ========================================================
+
+        await client.query(`
+            SELECT pg_advisory_xact_lock(74839201)
+        `);
+
+
+        // ========================================================
+        // VERIFICAR QUE EL DESPACHO PERTENECE AL PROVEEDOR
+        // ========================================================
+
+        const resultCabecera =
+            await client.query(
+                `
+                    SELECT
+                        transac_id
+                    FROM sisoxxo."MOV_TRANSACCIONES"
+                    WHERE transac_id = $1
+                      AND proveedor_id = $2
+                    FOR UPDATE
+                `,
+                [
+                    transacId,
+                    proveedorId
+                ]
+            );
+
+
+        if (
+            resultCabecera.rows.length === 0
+        ) {
+
+            throw new Error(
+                'DESPACHO_NO_ENCONTRADO'
+            );
+
+        }
+
+
+        // ========================================================
+        // ACTUALIZAR CABECERA
+        // ========================================================
+
+        await client.query(
+            `
+                UPDATE sisoxxo."MOV_TRANSACCIONES"
+                SET
+                    destino_id = $1,
+                    fecha_programacion = $2,
+                    observaciones = $3,
+                    last_update = CURRENT_TIMESTAMP,
+                    update_by = $4
+                WHERE transac_id = $5
+                  AND proveedor_id = $6
+            `,
+            [
+                destinoId,
+                fechaProgramacion,
+                observaciones,
+                usuarioId,
+                transacId,
+                proveedorId
+            ]
+        );
+
+
+        // ========================================================
+        // OBTENER LÍNEAS EXISTENTES
+        // ========================================================
+
+        const resultLineasExistentes =
+            await client.query(
+                `
+                    SELECT
+                        linea_id
+                    FROM sisoxxo."MOV_TRANSAC_DETALLE"
+                    WHERE transac_id = $1
+                    ORDER BY linea_id
+                `,
+                [transacId]
+            );
+
+
+        const lineasExistentes =
+            resultLineasExistentes.rows.map(
+                (row) => Number(row.linea_id)
+            );
+
+
+        // ========================================================
+        // IDENTIFICAR LÍNEAS RECIBIDAS DESDE FRONTEND
+        // ========================================================
+
+        const lineasRecibidas =
+            detalles
+                .filter(
+                    (detalle) =>
+                        detalle.linea_id !== null &&
+                        detalle.linea_id !== undefined
+                )
+                .map(
+                    (detalle) =>
+                        Number(detalle.linea_id)
+                );
+
+
+        // ========================================================
+        // VALIDAR QUE LAS LÍNEAS EXISTENTES PERTENEZCAN
+        // AL DESPACHO
+        // ========================================================
+
+        for (
+            const lineaId of lineasRecibidas
+        ) {
+
+            if (
+                !lineasExistentes.includes(
+                    lineaId
+                )
+            ) {
+
+                throw new Error(
+                    'LINEA_NO_ENCONTRADA'
+                );
+
+            }
+
+        }
+
+
+        // ========================================================
+        // ELIMINAR LÍNEAS QUE YA NO VIENEN EN EL FRONTEND
+        // ========================================================
+
+        await client.query(
+            `
+                DELETE FROM sisoxxo."MOV_TRANSAC_DETALLE"
+                WHERE transac_id = $1
+                  AND NOT (
+                      linea_id = ANY($2::integer[])
+                  )
+            `,
+            [
+                transacId,
+                lineasRecibidas
+            ]
+        );
+
+
+        // ========================================================
+        // DETERMINAR SIGUIENTE LINEA_ID
+        // ========================================================
+
+        const resultMaxLinea =
+            await client.query(
+                `
+                    SELECT
+                        COALESCE(
+                            MAX(linea_id),
+                            0
+                        ) AS max_linea_id
+                    FROM sisoxxo."MOV_TRANSAC_DETALLE"
+                    WHERE transac_id = $1
+                `,
+                [transacId]
+            );
+
+
+        let siguienteLineaId =
+            Number(
+                resultMaxLinea.rows[0].max_linea_id
+            ) + 1;
+
+
+        // ========================================================
+        // PROCESAR DETALLES
+        // ========================================================
+
+        for (
+            const detalle of detalles
+        ) {
+
+            let lineaId =
+                detalle.linea_id;
+
+
+            // ====================================================
+            // LÍNEA NUEVA
+            // ====================================================
+
+            if (
+                lineaId === null ||
+                lineaId === undefined
+            ) {
+
+                lineaId =
+                    siguienteLineaId;
+
+                siguienteLineaId++;
+
+            }
+
+
+            // ====================================================
+            // VERIFICAR SI LA LÍNEA YA EXISTE
+            // ====================================================
+
+            const resultLinea =
+                await client.query(
+                    `
+                        SELECT
+                            linea_id
+                        FROM sisoxxo."MOV_TRANSAC_DETALLE"
+                        WHERE transac_id = $1
+                          AND linea_id = $2
+                    `,
+                    [
+                        transacId,
+                        lineaId
+                    ]
+                );
+
+
+            // ====================================================
+            // ACTUALIZAR LÍNEA EXISTENTE
+            // ====================================================
+
+            if (
+                resultLinea.rows.length > 0
+            ) {
+
+                await client.query(
+                    `
+                        UPDATE sisoxxo."MOV_TRANSAC_DETALLE"
+                        SET
+                            producto_especie = $1,
+                            cantidad = $2,
+                            tipo_unid_med = $3,
+                            terminal_origen = $4,
+                            temperatura_descarga = $5,
+                            fecha_beneficio_ini = $6,
+                            fecha_beneficio_fin = $7,
+                            nro_guia_nota_venta = $8,
+                            registro_sanitario = $9,
+                            fecha_registro_ini = $10,
+                            fecha_registro_fin = $11,
+                            procedencia = $12,
+                            tipo_despacho = $13,
+                            fecha_cosecha = $14,
+                            fecha_ingreso = $15,
+                            codigo_nro_lote = $16,
+                            fecha_lote_venci = $17,
+                            observaciones = $18,
+                            last_update = CURRENT_TIMESTAMP,
+                            update_by = $19
+                        WHERE transac_id = $20
+                          AND linea_id = $21
+                    `,
+                    [
+                        detalle.producto_especie,
+                        detalle.cantidad,
+                        detalle.tipo_unid_med,
+                        detalle.terminal_origen,
+                        detalle.temperatura_descarga,
+                        detalle.fecha_beneficio_ini,
+                        detalle.fecha_beneficio_fin,
+                        detalle.nro_guia_nota_venta,
+                        detalle.registro_sanitario,
+                        detalle.fecha_registro_ini,
+                        detalle.fecha_registro_fin,
+                        detalle.procedencia,
+                        detalle.tipo_despacho,
+                        detalle.fecha_cosecha,
+                        detalle.fecha_ingreso,
+                        detalle.codigo_nro_lote,
+                        detalle.fecha_lote_venci,
+                        detalle.observaciones,
+                        usuarioId,
+                        transacId,
+                        lineaId
+                    ]
+                );
+
+            }
+
+            // ====================================================
+            // INSERTAR LÍNEA NUEVA
+            // ====================================================
+
+            else {
+
+                await client.query(
+                    `
+                        INSERT INTO sisoxxo."MOV_TRANSAC_DETALLE" (
+                            transac_id,
+                            linea_id,
+                            fecha_despacho,
+                            producto_especie,
+                            cantidad,
+                            tipo_unid_med,
+                            fecha_beneficio_ini,
+                            fecha_beneficio_fin,
+                            nro_guia_nota_venta,
+                            terminal_origen,
+                            temperatura_descarga,
+                            registro_sanitario,
+                            fecha_registro_ini,
+                            fecha_registro_fin,
+                            procedencia,
+                            tipo_despacho,
+                            fecha_cosecha,
+                            fecha_ingreso,
+                            codigo_nro_lote,
+                            fecha_lote_venci,
+                            observaciones,
+                            estado_despacho,
+                            create_by
+                        )
+                        VALUES (
+                            $1,
+                            $2,
+                            NULL,
+                            $3,
+                            $4,
+                            $5,
+                            $6,
+                            $7,
+                            $8,
+                            $9,
+                            $10,
+                            $11,
+                            $12,
+                            $13,
+                            $14,
+                            $15,
+                            $16,
+                            $17,
+                            $18,
+                            $19,
+                            $20,
+                            'PRO',
+                            $21
+                        )
+                    `,
+                    [
+                        transacId,
+                        lineaId,
+                        detalle.producto_especie,
+                        detalle.cantidad,
+                        detalle.tipo_unid_med,
+                        detalle.fecha_beneficio_ini,
+                        detalle.fecha_beneficio_fin,
+                        detalle.nro_guia_nota_venta,
+                        detalle.terminal_origen,
+                        detalle.temperatura_descarga,
+                        detalle.registro_sanitario,
+                        detalle.fecha_registro_ini,
+                        detalle.fecha_registro_fin,
+                        detalle.procedencia,
+                        detalle.tipo_despacho,
+                        detalle.fecha_cosecha,
+                        detalle.fecha_ingreso,
+                        detalle.codigo_nro_lote,
+                        detalle.fecha_lote_venci,
+                        detalle.observaciones,
+                        usuarioId
+                    ]
+                );
+
+            }
+
+        }
+
+
+        // ========================================================
+        // COMMIT
+        // ========================================================
+
+        await client.query('COMMIT');
+
+
+        // ========================================================
+        // RETORNAR DESPACHO ACTUALIZADO
+        // ========================================================
+
+        return {
+            transac_id: transacId
+        };
+
+
+    } catch (error) {
+
+        await client.query('ROLLBACK');
+
+        throw error;
+
+    } finally {
+
+        client.release();
+
+    }
+
+};
 
 // ============================================================
 // OBTENER DESPACHO POR ID
@@ -553,5 +977,6 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
 module.exports = {
     listarDespachos,
     obtenerDespachoPorId,
-    crearDespacho
+    crearDespacho,
+    actualizarDespacho
 };

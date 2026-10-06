@@ -1,7 +1,8 @@
 const {
     listarDespachosService,
     obtenerDespachoPorIdService,
-    crearDespachoService
+    crearDespachoService,
+    actualizarDespachoService
 } = require('../services/despachos.service');
 
 
@@ -197,6 +198,159 @@ case 'CANTIDAD_INVALIDA':
 };
 
 
+const actualizarDespacho = async (req, res) => {
+
+    try {
+
+        const transacId = req.params.id;
+
+        const proveedorId =
+            req.user?.proveedor_id;
+
+        const usuarioId =
+            req.user?.usuario_id;
+
+
+        if (!proveedorId) {
+
+            return res.status(400).json({
+                ok: false,
+                mensaje:
+                    'El usuario no tiene un proveedor asociado.'
+            });
+
+        }
+
+
+        if (!usuarioId) {
+
+            return res.status(400).json({
+                ok: false,
+                mensaje:
+                    'No se pudo identificar al usuario autenticado.'
+            });
+
+        }
+
+
+        const {
+            destinoId,
+            fechaProgramacion,
+            observaciones,
+            detalles
+        } = req.body;
+
+
+        const despacho =
+            await actualizarDespachoService({
+
+                transacId,
+
+                proveedorId,
+
+                destinoId,
+
+                fechaProgramacion,
+
+                observaciones,
+
+                detalles,
+
+                usuarioId
+
+            });
+
+
+        return res.status(200).json({
+
+            ok: true,
+
+            mensaje:
+                'Despacho actualizado correctamente.',
+
+            despacho
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            'Error al actualizar despacho:',
+            error
+        );
+
+
+        switch (error.message) {
+
+            case 'ID_TRANSACCION_INVALIDO':
+
+                return res.status(400).json({
+                    ok: false,
+                    mensaje:
+                        'El identificador de transacción no es válido.'
+                });
+
+
+            case 'PROVEEDOR_INVALIDO':
+
+                return res.status(400).json({
+                    ok: false,
+                    mensaje:
+                        'El proveedor no es válido.'
+                });
+
+
+            case 'DESTINO_REQUERIDO':
+
+                return res.status(400).json({
+                    ok: false,
+                    mensaje:
+                        'El destino de la tienda es obligatorio.'
+                });
+
+
+            case 'USUARIO_INVALIDO':
+
+                return res.status(400).json({
+                    ok: false,
+                    mensaje:
+                        'El usuario no es válido.'
+                });
+
+
+            case 'DETALLES_REQUERIDOS':
+
+                return res.status(400).json({
+                    ok: false,
+                    mensaje:
+                        'El despacho debe tener al menos una línea de detalle.'
+                });
+
+
+            case 'DESPACHO_NO_ENCONTRADO':
+
+                return res.status(404).json({
+                    ok: false,
+                    mensaje:
+                        'El despacho no fue encontrado.'
+                });
+
+
+            default:
+
+                return res.status(500).json({
+                    ok: false,
+                    mensaje:
+                        'No fue posible actualizar el despacho.'
+                });
+
+        }
+
+    }
+
+};
+
 // ============================================================
 // OBTENER DESPACHO POR ID
 // ============================================================
@@ -280,5 +434,6 @@ const obtenerDespachoPorId = async (req, res) => {
 module.exports = {
     listarDespachos,
     obtenerDespachoPorId,
-    crearDespacho
+    crearDespacho,
+    actualizarDespacho
 };

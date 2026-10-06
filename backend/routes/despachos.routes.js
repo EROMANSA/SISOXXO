@@ -3,7 +3,8 @@ const express = require('express');
 const {
     listarDespachos,
     obtenerDespachoPorId,
-    crearDespacho
+    crearDespacho,
+    actualizarDespacho
 } = require('../controllers/despachos.controller');
 
 /*
@@ -55,6 +56,20 @@ router.post(
     autenticarToken,
     autorizarRoles('PROVEEDOR'),
     crearDespacho
+);
+
+router.post(
+    '/',
+    autenticarToken,
+    autorizarRoles('PROVEEDOR'),
+    crearDespacho
+);
+
+router.put(
+    '/:id',
+    autenticarToken,
+    autorizarRoles('PROVEEDOR'),
+    actualizarDespacho
 );
 
 module.exports = router;

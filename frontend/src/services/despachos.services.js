@@ -42,6 +42,19 @@ export const crearDespacho = async (datos) => {
     const response = await despachosApi.post(
         '/despachos',
         datos
+    );  
+
+    return response.data;
+};
+
+export const actualizarDespacho = async (
+    transacId,
+    datos
+) => {
+
+    const response = await despachosApi.put(
+        `/despachos/${transacId}`,
+        datos
     );
 
     return response.data;
