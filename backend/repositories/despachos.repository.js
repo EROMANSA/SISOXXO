@@ -197,6 +197,7 @@ const crearDespacho = async ({
                 producto_especie,
                 cantidad,
                 tipo_unid_med,
+                pesaje_en_kg,
                 fecha_beneficio_ini,
                 fecha_beneficio_fin,
                 nro_guia_nota_venta,
@@ -237,9 +238,11 @@ const crearDespacho = async ({
                 $18,
                 $19,
                 $20,
-                'PRO',
-                $21
-            )
+                $21,
+'PRO',
+$22
+)
+ 
             RETURNING
                 transac_id,
                 linea_id,
@@ -247,6 +250,7 @@ const crearDespacho = async ({
                 producto_especie,
                 cantidad,
                 tipo_unid_med,
+                pesaje_en_kg,
                 fecha_beneficio_ini,
                 fecha_beneficio_fin,
                 nro_guia_nota_venta,
@@ -295,6 +299,12 @@ const crearDespacho = async ({
                         : null,
 
                     detalle.tipo_unid_med || null,
+
+                    detalle.pesaje_en_kg !== ''
+                    && detalle.pesaje_en_kg !== undefined
+                    && detalle.pesaje_en_kg !== null
+                    ? Number(detalle.pesaje_en_kg)
+                    : null,
 
                     detalle.fecha_beneficio_ini || null,
                     detalle.fecha_beneficio_fin || null,
@@ -380,6 +390,9 @@ const actualizarDespacho = async ({
     proveedorId,
     destinoId,
     fechaProgramacion,
+    estadoDespacho,
+    fechaDespacho,
+    fechaCancelacion,
     observaciones,
     detalles,
     usuarioId
@@ -410,31 +423,142 @@ const actualizarDespacho = async ({
         // ========================================================
 
         const resultCabecera =
-            await client.query(
-                `
-                    SELECT
-                        transac_id
-                    FROM sisoxxo."MOV_TRANSACCIONES"
-                    WHERE transac_id = $1
-                      AND proveedor_id = $2
-                    FOR UPDATE
-                `,
-                [
-                    transacId,
-                    proveedorId
-                ]
-            );
+    await client.query(
+        `
+            SELECT
+                transac_id,
+                estado_despacho
+            FROM sisoxxo."MOV_TRANSACCIONES"
+            WHERE transac_id = $1
+              AND proveedor_id = $2
+            FOR UPDATE
+        `,
+        [
+            transacId,
+            proveedorId
+        ]
+    );
 
 
-        if (
-            resultCabecera.rows.length === 0
-        ) {
+if (
+    resultCabecera.rows.length === 0
+) {
 
-            throw new Error(
-                'DESPACHO_NO_ENCONTRADO'
-            );
+    throw new Error(
+        'DESPACHO_NO_ENCONTRADO'
+    );
 
-        }
+}
+
+
+const estadoActual =
+    resultCabecera.rows[0].estado_despacho;
+
+
+if (
+    estadoActual !== 'PRO'
+) {
+
+    throw new Error(
+        'DESPACHO_NO_MODIFICABLE'
+    );
+
+}
+
+// ========================================================
+// VALIDAR ESTADO FINAL
+// ========================================================
+
+const estadosPermitidos = [
+    'PRO',
+    'DSP',
+    'CAN'
+];
+
+if (
+    !estadosPermitidos.includes(
+        estadoDespacho
+    )
+) {
+    throw new Error(
+        'ESTADO_DESPACHO_INVALIDO'
+    );
+}
+
+
+// ========================================================
+// NORMALIZAR FECHAS SEGÚN ESTADO
+// ========================================================
+
+let fechaDespachoFinal = null;
+let fechaCancelacionFinal = null;
+
+
+// ========================================================
+// ESTADO DSP
+// ========================================================
+
+if (estadoDespacho === 'DSP') {
+
+    if (!fechaDespacho) {
+
+        throw new Error(
+            'FECHA_DESPACHO_REQUERIDA'
+        );
+
+    }
+
+    if (
+        fechaProgramacion &&
+        fechaDespacho < fechaProgramacion
+    ) {
+
+        throw new Error(
+            'FECHA_DESPACHO_INVALIDA'
+        );
+
+    }
+
+    fechaDespachoFinal =
+        fechaDespacho;
+
+}
+
+
+// ========================================================
+// ESTADO CAN
+// ========================================================
+
+if (estadoDespacho === 'CAN') {
+
+    if (!fechaCancelacion) {
+
+        throw new Error(
+            'FECHA_CANCELACION_REQUERIDA'
+        );
+
+    }
+
+    if (
+        fechaProgramacion &&
+        fechaCancelacion < fechaProgramacion
+    ) {
+
+        throw new Error(
+            'FECHA_CANCELACION_INVALIDA'
+        );
+
+    }
+
+    fechaCancelacionFinal =
+        fechaCancelacion;
+
+}
+
+
+
+
+
 
 
         // ========================================================
@@ -442,26 +566,32 @@ const actualizarDespacho = async ({
         // ========================================================
 
         await client.query(
-            `
-                UPDATE sisoxxo."MOV_TRANSACCIONES"
-                SET
-                    destino_id = $1,
-                    fecha_programacion = $2,
-                    observaciones = $3,
-                    last_update = CURRENT_TIMESTAMP,
-                    update_by = $4
-                WHERE transac_id = $5
-                  AND proveedor_id = $6
-            `,
-            [
-                destinoId,
-                fechaProgramacion,
-                observaciones,
-                usuarioId,
-                transacId,
-                proveedorId
-            ]
-        );
+    `
+        UPDATE sisoxxo."MOV_TRANSACCIONES"
+        SET
+            destino_id = $1,
+            fecha_programacion = $2,
+            estado_despacho = $3,
+            fecha_despacho = $4,
+            fecha_cancelacion = $5,
+            observaciones = $6,
+            last_update = CURRENT_TIMESTAMP,
+            update_by = $7
+        WHERE transac_id = $8
+          AND proveedor_id = $9
+    `,
+    [
+        destinoId,
+        fechaProgramacion,
+        estadoDespacho,
+        fechaDespachoFinal,
+        fechaCancelacionFinal,
+        observaciones,
+        usuarioId,
+        transacId,
+        proveedorId
+    ]
+);
 
 
         // ========================================================
@@ -632,53 +762,62 @@ const actualizarDespacho = async ({
                 await client.query(
                     `
                         UPDATE sisoxxo."MOV_TRANSAC_DETALLE"
-                        SET
-                            producto_especie = $1,
-                            cantidad = $2,
-                            tipo_unid_med = $3,
-                            terminal_origen = $4,
-                            temperatura_descarga = $5,
-                            fecha_beneficio_ini = $6,
-                            fecha_beneficio_fin = $7,
-                            nro_guia_nota_venta = $8,
-                            registro_sanitario = $9,
-                            fecha_registro_ini = $10,
-                            fecha_registro_fin = $11,
-                            procedencia = $12,
-                            tipo_despacho = $13,
-                            fecha_cosecha = $14,
-                            fecha_ingreso = $15,
-                            codigo_nro_lote = $16,
-                            fecha_lote_venci = $17,
-                            observaciones = $18,
-                            last_update = CURRENT_TIMESTAMP,
-                            update_by = $19
-                        WHERE transac_id = $20
-                          AND linea_id = $21
+SET
+    producto_especie = $1,
+    cantidad = $2,
+    tipo_unid_med = $3,
+    pesaje_en_kg = $4,
+    terminal_origen = $5,
+    temperatura_descarga = $6,
+    fecha_beneficio_ini = $7,
+    fecha_beneficio_fin = $8,
+    nro_guia_nota_venta = $9,
+    registro_sanitario = $10,
+    fecha_registro_ini = $11,
+    fecha_registro_fin = $12,
+    procedencia = $13,
+    tipo_despacho = $14,
+    fecha_cosecha = $15,
+    fecha_ingreso = $16,
+    codigo_nro_lote = $17,
+    fecha_lote_venci = $18,
+    observaciones = $19,
+    estado_despacho = $20,
+    last_update = CURRENT_TIMESTAMP,
+    update_by = $21
+WHERE transac_id = $22
+  AND linea_id = $23
                     `,
                     [
-                        detalle.producto_especie,
-                        detalle.cantidad,
-                        detalle.tipo_unid_med,
-                        detalle.terminal_origen,
-                        detalle.temperatura_descarga,
-                        detalle.fecha_beneficio_ini,
-                        detalle.fecha_beneficio_fin,
-                        detalle.nro_guia_nota_venta,
-                        detalle.registro_sanitario,
-                        detalle.fecha_registro_ini,
-                        detalle.fecha_registro_fin,
-                        detalle.procedencia,
-                        detalle.tipo_despacho,
-                        detalle.fecha_cosecha,
-                        detalle.fecha_ingreso,
-                        detalle.codigo_nro_lote,
-                        detalle.fecha_lote_venci,
-                        detalle.observaciones,
-                        usuarioId,
-                        transacId,
-                        lineaId
-                    ]
+        detalle.producto_especie,
+        detalle.cantidad,
+        detalle.tipo_unid_med,
+        detalle.pesaje_en_kg,
+        detalle.terminal_origen,
+        detalle.temperatura_descarga,
+        detalle.fecha_beneficio_ini,
+        detalle.fecha_beneficio_fin,
+        detalle.nro_guia_nota_venta,
+        detalle.registro_sanitario,
+        detalle.fecha_registro_ini,
+        detalle.fecha_registro_fin,
+        detalle.procedencia,
+        detalle.tipo_despacho,
+        detalle.fecha_cosecha,
+        detalle.fecha_ingreso,
+        detalle.codigo_nro_lote,
+        detalle.fecha_lote_venci,
+        detalle.observaciones,
+
+        // Estado según estado de cabecera
+        estadoDespacho === 'DSP'
+            ? 'ING'
+            : estadoDespacho,
+
+        usuarioId,
+        transacId,
+        lineaId
+    ]
                 );
 
             }
@@ -742,29 +881,35 @@ const actualizarDespacho = async ({
                             $21
                         )
                     `,
-                    [
-                        transacId,
-                        lineaId,
-                        detalle.producto_especie,
-                        detalle.cantidad,
-                        detalle.tipo_unid_med,
-                        detalle.fecha_beneficio_ini,
-                        detalle.fecha_beneficio_fin,
-                        detalle.nro_guia_nota_venta,
-                        detalle.terminal_origen,
-                        detalle.temperatura_descarga,
-                        detalle.registro_sanitario,
-                        detalle.fecha_registro_ini,
-                        detalle.fecha_registro_fin,
-                        detalle.procedencia,
-                        detalle.tipo_despacho,
-                        detalle.fecha_cosecha,
-                        detalle.fecha_ingreso,
-                        detalle.codigo_nro_lote,
-                        detalle.fecha_lote_venci,
-                        detalle.observaciones,
-                        usuarioId
-                    ]
+                   [
+    transacId,
+    lineaId,
+    detalle.producto_especie,
+    detalle.cantidad,
+    detalle.tipo_unid_med,
+    detalle.fecha_beneficio_ini,
+    detalle.fecha_beneficio_fin,
+    detalle.nro_guia_nota_venta,
+    detalle.terminal_origen,
+    detalle.temperatura_descarga,
+    detalle.registro_sanitario,
+    detalle.fecha_registro_ini,
+    detalle.fecha_registro_fin,
+    detalle.procedencia,
+    detalle.tipo_despacho,
+    detalle.fecha_cosecha,
+    detalle.fecha_ingreso,
+    detalle.codigo_nro_lote,
+    detalle.fecha_lote_venci,
+    detalle.observaciones,
+
+estadoDespacho === 'DSP'
+    ? 'ING'
+    : estadoDespacho,
+
+usuarioId
+    
+]
                 );
 
             }
@@ -900,6 +1045,8 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
 
             d.tipo_unid_med,
             lum.descripcion AS unidad_medida_descripcion,
+
+            d.pesaje_en_kg,
 
             d.fecha_beneficio_ini,
             d.fecha_beneficio_fin,

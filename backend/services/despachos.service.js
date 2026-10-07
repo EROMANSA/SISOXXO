@@ -200,6 +200,28 @@ const crearDespachoService = async ({
 
         }
 
+        if (
+    detalle.pesaje_en_kg !== undefined &&
+    detalle.pesaje_en_kg !== null &&
+    detalle.pesaje_en_kg !== ''
+) {
+
+    const pesajeEnKg =
+        Number(detalle.pesaje_en_kg);
+
+    if (
+        !Number.isFinite(pesajeEnKg) ||
+        pesajeEnKg < 0
+    ) {
+
+        throw new Error('PESAJE_EN_KG_INVALIDO');
+
+    }
+
+}    
+
+
+
     }
 
 
@@ -234,6 +256,15 @@ const crearDespachoService = async ({
                             detalle.tipo_unid_med
                         ).trim()
                         : null,
+
+                pesaje_en_kg:
+    detalle.pesaje_en_kg !== undefined &&
+    detalle.pesaje_en_kg !== null &&
+    detalle.pesaje_en_kg !== ''
+        ? Number(
+            detalle.pesaje_en_kg
+        )
+        : null,        
 
                 terminal_origen:
                     detalle.terminal_origen
@@ -365,6 +396,9 @@ const actualizarDespachoService = async ({
     proveedorId,
     destinoId,
     fechaProgramacion,
+    estadoDespacho,
+    fechaDespacho,
+    fechaCancelacion,
     observaciones,
     detalles,
     usuarioId
@@ -486,6 +520,26 @@ const actualizarDespachoService = async ({
 
         }
 
+        if (
+    detalle.pesaje_en_kg !== undefined &&
+    detalle.pesaje_en_kg !== null &&
+    detalle.pesaje_en_kg !== ''
+) {
+
+    const pesajeEnKg =
+        Number(detalle.pesaje_en_kg);
+
+    if (
+        !Number.isFinite(pesajeEnKg) ||
+        pesajeEnKg < 0
+    ) {
+
+        throw new Error('PESAJE_EN_KG_INVALIDO');
+
+    }
+
+}
+
 
         // ----------------------------------------------------
         // Validar linea_id
@@ -555,6 +609,15 @@ const actualizarDespachoService = async ({
                             detalle.tipo_unid_med
                         ).trim()
                         : null,
+
+                pesaje_en_kg:
+    detalle.pesaje_en_kg !== undefined &&
+    detalle.pesaje_en_kg !== null &&
+    detalle.pesaje_en_kg !== ''
+        ? Number(
+            detalle.pesaje_en_kg
+        )
+        : null,        
 
                 terminal_origen:
                     detalle.terminal_origen
@@ -651,30 +714,39 @@ const actualizarDespachoService = async ({
 
     return await actualizarDespacho({
 
-        transacId:
-            idTransaccion,
+    transacId:
+        idTransaccion,
 
-        proveedorId:
-            Number(proveedorId),
+    proveedorId:
+        Number(proveedorId),
 
-        destinoId:
-            String(destinoId).trim(),
+    destinoId:
+        String(destinoId).trim(),
 
-        fechaProgramacion:
-            fechaProgramacion || null,
+    fechaProgramacion:
+        fechaProgramacion || null,
 
-        observaciones:
-            observaciones
-                ? String(observaciones).trim()
-                : null,
+    estadoDespacho:
+        estadoDespacho || 'PRO',
 
-        detalles:
-            detallesNormalizados,
+    fechaDespacho:
+        fechaDespacho || null,
 
-        usuarioId:
-            Number(usuarioId)
+    fechaCancelacion:
+        fechaCancelacion || null,
 
-    });
+    observaciones:
+        observaciones
+            ? String(observaciones).trim()
+            : null,
+
+    detalles:
+        detallesNormalizados,
+
+    usuarioId:
+        Number(usuarioId)
+
+});
 
 };
 

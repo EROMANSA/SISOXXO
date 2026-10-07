@@ -373,18 +373,27 @@ const DespachoEditarPage = () => {
     const [observaciones, setObservaciones] =
         useState('');
 
+    const [fechaDespacho, setFechaDespacho] =
+    useState('');
+
+    const [fechaCancelacion, setFechaCancelacion] =
+    useState('');    
+
+    const [estadoDespacho, setEstadoDespacho] =
+    useState('PRO');    
+
     const [lineas, setLineas] =
         useState([]);
 
     const [cargando, setCargando] =
     useState(true);
 
-const [guardando, setGuardando] =
+    const [guardando, setGuardando] =
     useState(false);
 
-const [error, setError] =
+    const [error, setError] =
     useState('');
-
+    
 
     /*
     ==========================================================
@@ -463,6 +472,22 @@ const [error, setError] =
                     cabecera.observaciones || ''
                 );
 
+                setEstadoDespacho(
+                    cabecera.estado_despacho || 'PRO'
+                );
+
+                setFechaDespacho(
+    convertirFechaInput(
+        cabecera.fecha_despacho
+    )
+);
+
+setFechaCancelacion(
+    convertirFechaInput(
+        cabecera.fecha_cancelacion
+    )
+);
+
 
                 setLineas(
                     detalles.map((detalle) => ({
@@ -481,6 +506,9 @@ producto_especie:
 
                         tipo_unid_med:
                             detalle.tipo_unid_med || '',
+
+                        pesaje_en_kg:
+                            detalle.pesaje_en_kg ?? '',    
 
                         terminal_origen:
                             detalle.terminal_origen || '',
@@ -640,11 +668,15 @@ producto_especie:
     ==========================================================
     */
 
-    const actualizarLinea = (
+   const actualizarLinea = (
     lineaUiId,
     campo,
     valor
 ) => {
+
+    if (estadoDespacho !== 'PRO') {
+        return;
+    }
 
     setLineas(
         lineas.map((linea) => {
@@ -665,6 +697,70 @@ producto_especie:
 
 };
 
+const cambiarEstadoDespacho = (nuevoEstado) => {
+
+    setEstadoDespacho(nuevoEstado);
+
+    if (nuevoEstado === 'PRO') {
+
+        setFechaDespacho('');
+        setFechaCancelacion('');
+
+        setLineas(
+            lineas.map((linea) => ({
+                ...linea,
+                estado_despacho: 'PRO',
+                estado_despacho_descripcion:
+                    'Programado'
+            }))
+        );
+
+        return;
+    }
+
+    if (nuevoEstado === 'DSP') {
+
+        setFechaDespacho(
+            fechaDespacho ||
+            fechaProgramacion
+        );
+
+        setFechaCancelacion('');
+
+        setLineas(
+            lineas.map((linea) => ({
+                ...linea,
+                estado_despacho: 'ING',
+                estado_despacho_descripcion:
+                    'Ingresado'
+            }))
+        );
+
+        return;
+    }
+
+    if (nuevoEstado === 'CAN') {
+
+        setFechaCancelacion(
+            fechaCancelacion ||
+            fechaProgramacion
+        );
+
+        setFechaDespacho('');
+
+        setLineas(
+            lineas.map((linea) => ({
+                ...linea,
+                estado_despacho: 'CAN',
+                estado_despacho_descripcion:
+                    'Cancelado'
+            }))
+        );
+    }
+};
+
+
+
 
     /*
     ==========================================================
@@ -673,6 +769,10 @@ producto_especie:
     */
 
     const agregarLinea = () => {
+
+        if (estadoDespacho !== 'PRO') {
+        return;
+    }
 
     const nuevoLineaUiId =
         `NEW_${Date.now()}_${Math.random()
@@ -693,6 +793,8 @@ producto_especie:
             cantidad: '',
 
             tipo_unid_med: '',
+
+            pesaje_en_kg: '',
 
             terminal_origen: '',
 
@@ -741,6 +843,11 @@ producto_especie:
     */
 
  const eliminarLinea = (lineaUiId) => {
+
+    if (estadoDespacho !== 'PRO') {
+        return;
+    }
+
 
     setLineas(
         lineas.filter(
@@ -793,6 +900,63 @@ const guardarCambios = async () => {
 
         setGuardando(true);
 
+        // ====================================================
+// VALIDAR FECHAS SEGÚN ESTADO
+// ====================================================
+
+if (estadoDespacho === 'DSP') {
+
+    if (!fechaDespacho) {
+
+        setError(
+            'Debe ingresar la Fecha de Despacho.'
+        );
+
+        return;
+    }
+
+    if (
+        fechaProgramacion &&
+        fechaDespacho < fechaProgramacion
+    ) {
+
+        setError(
+            'La Fecha de Despacho no puede ser anterior a la Fecha de Programación.'
+        );
+
+        return;
+    }
+}
+
+if (estadoDespacho === 'CAN') {
+
+    if (!fechaCancelacion) {
+
+        setError(
+            'Debe ingresar la Fecha de Cancelación.'
+        );
+
+        return;
+    }
+
+    if (
+        fechaProgramacion &&
+        fechaCancelacion < fechaProgramacion
+    ) {
+
+        setError(
+            'La Fecha de Cancelación no puede ser anterior a la Fecha de Programación.'
+        );
+
+        return;
+    }
+}
+
+
+
+
+
+
 
         // ====================================================
         // PREPARAR DETALLE
@@ -814,6 +978,9 @@ const guardarCambios = async () => {
 
                 tipo_unid_med:
                     linea.tipo_unid_med,
+
+                pesaje_en_kg:
+                    linea.pesaje_en_kg,    
 
                 terminal_origen:
                     linea.terminal_origen,
@@ -870,20 +1037,29 @@ const guardarCambios = async () => {
 
         const datos = {
 
-            destinoId:
-                String(destinoId).trim(),
+    destinoId:
+        String(destinoId).trim(),
 
-            fechaProgramacion:
-                fechaProgramacion || null,
+    fechaProgramacion:
+        fechaProgramacion || null,
 
-            observaciones:
-                observaciones
-                    ? String(observaciones).trim()
-                    : null,
+    estadoDespacho:
+        estadoDespacho,
 
-            detalles
+    fechaDespacho:
+        fechaDespacho || null,
 
-        };
+    fechaCancelacion:
+        fechaCancelacion || null,
+
+    observaciones:
+        observaciones
+            ? String(observaciones).trim()
+            : null,
+
+    detalles
+
+};
 
 
         // ====================================================
@@ -1120,6 +1296,116 @@ const guardarCambios = async () => {
 
                     </div>
 
+                    {estadoDespacho === 'DSP' && (
+    <div style={estilos.campo}>
+
+        <label style={estilos.etiqueta}>
+            Fecha de Despacho
+        </label>
+
+        <input
+    type="date"
+    value={fechaDespacho}
+    min={fechaProgramacion || undefined}
+    onChange={(event) => {
+
+        const nuevaFecha =
+            event.target.value;
+
+        setFechaDespacho(nuevaFecha);
+
+        if (
+            fechaProgramacion &&
+            nuevaFecha &&
+            nuevaFecha < fechaProgramacion
+        ) {
+            setError(
+                'La Fecha de Despacho no puede ser anterior a la Fecha de Programación.'
+            );
+        } else {
+            setError('');
+        }
+
+    }}
+    style={estilos.input}
+/>
+
+    </div>
+)}
+
+{estadoDespacho === 'CAN' && (
+    <div style={estilos.campo}>
+
+        <label style={estilos.etiqueta}>
+            Fecha de Cancelación
+        </label>
+
+        <input
+    type="date"
+    value={fechaCancelacion}
+    min={fechaProgramacion || undefined}
+    onChange={(event) => {
+
+        const nuevaFecha =
+            event.target.value;
+
+        setFechaCancelacion(nuevaFecha);
+
+        if (
+            fechaProgramacion &&
+            nuevaFecha &&
+            nuevaFecha < fechaProgramacion
+        ) {
+            setError(
+                'La Fecha de Cancelación no puede ser anterior a la Fecha de Programación.'
+            );
+        } else {
+            setError('');
+        }
+
+    }}
+    style={estilos.input}
+/>
+
+    </div>
+)}            
+
+
+
+
+                     <div style={estilos.campo}>
+
+    <label style={estilos.etiqueta}>
+        Estado Despacho
+    </label>
+
+    <select
+        value={estadoDespacho}
+        onChange={(event) =>
+            cambiarEstadoDespacho(
+                event.target.value
+            )
+        }
+        style={estilos.input}
+    >
+        <option value="PRO">
+            Programado
+        </option>
+
+        <option value="DSP">
+            Despachado
+        </option>
+
+        <option value="CAN">
+            Cancelado
+        </option>
+    </select>
+
+</div>       
+
+
+
+
                 </div>
 
 
@@ -1165,13 +1451,15 @@ const guardarCambios = async () => {
                         Detalle del Despacho
                     </div>
 
-                    <button
-                        type="button"
-                        style={estilos.botonAgregar}
-                        onClick={agregarLinea}
-                    >
-                        + Agregar línea
-                    </button>
+                    {estadoDespacho === 'PRO' && (
+    <button
+        type="button"
+        style={estilos.botonAgregar}
+        onClick={agregarLinea}
+    >
+        + Agregar línea
+    </button>
+)}
 
                 </div>
 
@@ -1212,6 +1500,10 @@ const guardarCambios = async () => {
                                         Unidad Medida
                                     </th>
 
+                                    <th style={estilos.th}>
+                                                Pesaje en Kg
+                                    </th>
+
                                     {camposEspecificos.map(
                                         (campo) => (
 
@@ -1230,6 +1522,8 @@ const guardarCambios = async () => {
 
                                         )
                                     )}
+
+                                    
 
                                     <th style={estilos.th}>
                                         Observaciones
@@ -1377,6 +1671,33 @@ const guardarCambios = async () => {
                                                 </select>
 
                                             </td>
+
+                                            <td
+    style={
+        estilos.td
+    }
+>
+
+    <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={
+            linea.pesaje_en_kg
+        }
+        onChange={(event) =>
+            actualizarLinea(
+                linea.linea_ui_id,
+                'pesaje_en_kg',
+                event.target.value
+            )
+        }
+        style={
+            estilos.input
+        }
+    />
+
+</td>
 
 
                                             {camposEspecificos.map(
@@ -1527,19 +1848,19 @@ const guardarCambios = async () => {
                                                 }
                                             >
 
-                                                <button
-                                                    type="button"
-                                                    style={
-                                                        estilos.botonEliminar
-                                                    }
-                                                    onClick={() =>
-                                                        eliminarLinea(
-                                                            linea.linea_ui_id
-                                                        )
-                                                    }
-                                                >
-                                                    Eliminar
-                                                </button>
+                                                {estadoDespacho === 'PRO' && (
+    <button
+        type="button"
+        style={estilos.botonEliminar}
+        onClick={() =>
+            eliminarLinea(
+                linea.linea_ui_id
+            )
+        }
+    >
+        Eliminar
+    </button>
+)}
 
                                             </td>
 

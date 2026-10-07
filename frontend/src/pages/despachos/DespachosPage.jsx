@@ -558,23 +558,25 @@ const DespachosPage = () => {
     Ver
 </button>
 
-        <button
-    type="button"
-    style={{
-        padding: '5px 10px',
-        border: '1px solid #7C3AED',
-        borderRadius: '4px',
-        backgroundColor: '#FFFFFF',
-        color: '#7C3AED',
-        fontSize: '12px',
-        cursor: 'pointer'
-    }}
-    onClick={() => {
-        navigate(`/despachos/${despacho.transac_id}/editar`);
-    }}
->
-    Editar
-</button>
+        {despacho.estado_despacho === 'PRO' && (
+    <button
+        type="button"
+        style={{
+            padding: '5px 10px',
+            border: '1px solid #7C3AED',
+            borderRadius: '4px',
+            backgroundColor: '#FFFFFF',
+            color: '#7C3AED',
+            fontSize: '12px',
+            cursor: 'pointer'
+        }}
+        onClick={() => {
+            navigate(`/despachos/${despacho.transac_id}/editar`);
+        }}
+    >
+        Editar
+    </button>
+)}
 
     </div>
 </td>

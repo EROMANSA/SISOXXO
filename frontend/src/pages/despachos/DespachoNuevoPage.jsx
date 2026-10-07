@@ -342,6 +342,7 @@ const crearLineaVacia = (lineaId) => {
         cantidad: '',
 
         tipo_unid_med: '',
+        pesaje_en_kg: '',
 
         terminal_origen: '',
         temperatura_descarga: '',
@@ -623,6 +624,11 @@ const DespachoNuevoPage = () => {
                     ? null
                     : Number(linea.cantidad),
             tipo_unid_med: linea.tipo_unid_med || null,
+
+            pesaje_en_kg:
+                linea.pesaje_en_kg === ''
+                            ? null
+                            : Number(linea.pesaje_en_kg),
 
             terminal_origen:
                 linea.terminal_origen?.trim() || null,
@@ -965,6 +971,10 @@ const DespachoNuevoPage = () => {
                                         Unidad Medida
                                     </th>
 
+                                    <th style={estilos.th}>
+    Pesaje en Kg
+</th>
+
                                     {camposEspecificos.map(
     (campo) => (
 
@@ -1109,6 +1119,25 @@ const DespachoNuevoPage = () => {
                                                 </select>
 
                                             </td>
+
+                                            <td
+    style={estilos.td}
+>
+    <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={linea.pesaje_en_kg}
+        onChange={(event) =>
+            actualizarLinea(
+                linea.linea_id,
+                'pesaje_en_kg',
+                event.target.value
+            )
+        }
+        style={estilos.input}
+    />
+</td>
 
                                             {camposEspecificos.map(
     (campo) => (

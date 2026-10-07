@@ -85,26 +85,26 @@ const crearDespacho = async (req, res) => {
         // DATOS RECIBIDOS
         // ====================================================
 
-        const {
-            destinoId,
-            fechaProgramacion,
-            observaciones,
-            detalles
-        } = req.body;
-
+       const {
+    destinoId,
+    fechaProgramacion,
+    observaciones,
+    detalles
+} = req.body;
 
         // ====================================================
         // CREAR DESPACHO
         // ====================================================
 
-        const despacho = await crearDespachoService({
-    proveedorId,
-    destinoId,
-    fechaProgramacion,
-    observaciones,
-    detalles,
-    usuarioId
-});
+        const despacho =
+    await crearDespachoService({
+        proveedorId,
+        destinoId,
+        fechaProgramacion,
+        observaciones,
+        detalles,
+        usuarioId
+    });
 
 
         // ====================================================
@@ -153,20 +153,7 @@ const crearDespacho = async (req, res) => {
                 });
 
 
-            case 'DETALLES_REQUERIDOS':
-
-                return res.status(400).json({
-                    ok: false,
-                    mensaje: 'Debe registrar al menos un detalle para el despacho.'
-                });
-
-
-            case 'DETALLE_INVALIDO':
-
-                return res.status(400).json({
-                    ok: false,
-                    mensaje: 'Uno de los detalles del despacho no tiene un formato válido.'
-                });
+            
 
             case 'DETALLES_REQUERIDOS':
     return res.status(400).json({
@@ -234,31 +221,40 @@ const actualizarDespacho = async (req, res) => {
 
 
         const {
-            destinoId,
-            fechaProgramacion,
-            observaciones,
-            detalles
-        } = req.body;
+    destinoId,
+    fechaProgramacion,
+    estadoDespacho,
+    fechaDespacho,
+    fechaCancelacion,
+    observaciones,
+    detalles
+} = req.body;
 
 
         const despacho =
-            await actualizarDespachoService({
+    await actualizarDespachoService({
 
-                transacId,
+        transacId,
 
-                proveedorId,
+        proveedorId,
 
-                destinoId,
+        destinoId,
 
-                fechaProgramacion,
+        fechaProgramacion,
 
-                observaciones,
+        estadoDespacho,
 
-                detalles,
+        fechaDespacho,
 
-                usuarioId
+        fechaCancelacion,
 
-            });
+        observaciones,
+
+        detalles,
+
+        usuarioId
+
+    });
 
 
         return res.status(200).json({
@@ -335,6 +331,58 @@ const actualizarDespacho = async (req, res) => {
                     mensaje:
                         'El despacho no fue encontrado.'
                 });
+
+            case 'DESPACHO_NO_MODIFICABLE':
+    return res.status(409).json({
+        ok: false,
+        mensaje:
+            'El despacho no puede ser modificado porque su estado actual no es PRO.'
+    });  
+    
+    case 'ESTADO_DESPACHO_INVALIDO':
+
+    return res.status(400).json({
+        ok: false,
+        mensaje:
+            'El estado del despacho enviado no es válido.'
+    });
+
+
+case 'FECHA_DESPACHO_REQUERIDA':
+
+    return res.status(400).json({
+        ok: false,
+        mensaje:
+            'La Fecha de Despacho es obligatoria cuando el estado es DSP.'
+    });
+
+
+case 'FECHA_DESPACHO_INVALIDA':
+
+    return res.status(400).json({
+        ok: false,
+        mensaje:
+            'La Fecha de Despacho no puede ser anterior a la Fecha de Programación.'
+    });
+
+
+case 'FECHA_CANCELACION_REQUERIDA':
+
+    return res.status(400).json({
+        ok: false,
+        mensaje:
+            'La Fecha de Cancelación es obligatoria cuando el estado es CAN.'
+    });
+
+
+case 'FECHA_CANCELACION_INVALIDA':
+
+    return res.status(400).json({
+        ok: false,
+        mensaje:
+            'La Fecha de Cancelación no puede ser anterior a la Fecha de Programación.'
+    });
+
 
 
             default:
