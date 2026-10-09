@@ -837,6 +837,7 @@ WHERE transac_id = $22
                             producto_especie,
                             cantidad,
                             tipo_unid_med,
+                            pesaje_en_kg,
                             fecha_beneficio_ini,
                             fecha_beneficio_fin,
                             nro_guia_nota_venta,
@@ -877,38 +878,37 @@ WHERE transac_id = $22
                             $18,
                             $19,
                             $20,
-                            'PRO',
-                            $21
+                            $21, 
+                            $22,
+                            $23
                         )
                     `,
-                   [
-    transacId,
-    lineaId,
-    detalle.producto_especie,
-    detalle.cantidad,
-    detalle.tipo_unid_med,
-    detalle.fecha_beneficio_ini,
-    detalle.fecha_beneficio_fin,
-    detalle.nro_guia_nota_venta,
-    detalle.terminal_origen,
-    detalle.temperatura_descarga,
-    detalle.registro_sanitario,
-    detalle.fecha_registro_ini,
-    detalle.fecha_registro_fin,
-    detalle.procedencia,
-    detalle.tipo_despacho,
-    detalle.fecha_cosecha,
-    detalle.fecha_ingreso,
-    detalle.codigo_nro_lote,
-    detalle.fecha_lote_venci,
-    detalle.observaciones,
-
-estadoDespacho === 'DSP'
-    ? 'ING'
-    : estadoDespacho,
-
-usuarioId
-    
+                   [    
+                        transacId,
+                        lineaId,
+                        detalle.producto_especie,
+                        detalle.cantidad,
+                        detalle.tipo_unid_med,
+                        detalle.pesaje_en_kg,
+                        detalle.fecha_beneficio_ini,
+                        detalle.fecha_beneficio_fin,
+                        detalle.nro_guia_nota_venta,
+                        detalle.terminal_origen,
+                        detalle.temperatura_descarga,
+                        detalle.registro_sanitario,
+                        detalle.fecha_registro_ini,
+                        detalle.fecha_registro_fin,
+                        detalle.procedencia,
+                        detalle.tipo_despacho,
+                        detalle.fecha_cosecha,
+                        detalle.fecha_ingreso,
+                        detalle.codigo_nro_lote,
+                        detalle.fecha_lote_venci,
+                        detalle.observaciones,
+                        estadoDespacho === 'DSP'
+                            ? 'ING'
+                            : estadoDespacho,
+                        usuarioId    
 ]
                 );
 
