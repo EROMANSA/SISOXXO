@@ -242,6 +242,7 @@ const columnasPorRubro = {
             campo: 'registro_sanitario',
             titulo: 'REGISTRO SANITARIO'
         },
+        /*
         {
             campo: 'fecha_emis_registro',
             titulo: 'FECHA EMIS. REGISTRO'
@@ -250,6 +251,7 @@ const columnasPorRubro = {
             campo: 'fecha_venci_registro',
             titulo: 'FECHA VENC. REGISTRO'
         },
+        */
         {
             campo: 'codigo_lote',
             titulo: 'CÓDIGO LOTE'

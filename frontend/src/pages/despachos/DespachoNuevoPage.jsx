@@ -283,6 +283,7 @@ const CAMPOS_RUBRO = {
             titulo: 'Registro Sanitario',
             tipo: 'text'
         },
+        /*
         {
             campo: 'fecha_registro_ini',
             titulo: 'Fecha Emisión Registro',
@@ -293,6 +294,7 @@ const CAMPOS_RUBRO = {
             titulo: 'Fecha Vencimiento Registro',
             tipo: 'date'
         },
+        */
         {
             campo: 'codigo_nro_lote',
             titulo: 'Código Lote',
@@ -352,8 +354,10 @@ const crearLineaVacia = (lineaId) => {
         nro_guia_nota_venta: '',
 
         registro_sanitario: '',
+        /*
         fecha_registro_ini: '',
         fecha_registro_fin: '',
+        */
 
         procedencia: '',
         tipo_despacho: '',
@@ -647,12 +651,13 @@ const DespachoNuevoPage = () => {
 
             registro_sanitario:
                 linea.registro_sanitario?.trim() || null,
-
+            /*
             fecha_registro_ini:
                 linea.fecha_registro_ini || null,
 
             fecha_registro_fin:
                 linea.fecha_registro_fin || null,
+            */    
 
             procedencia:
                 linea.procedencia?.trim() || null,
@@ -1309,7 +1314,7 @@ const DespachoNuevoPage = () => {
                         estilos.botonCancelar
                     }
                 >
-                    Cancelar
+                    Cerrar
                 </button>
 
 

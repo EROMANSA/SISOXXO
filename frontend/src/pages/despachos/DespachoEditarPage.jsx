@@ -275,21 +275,25 @@ const CAMPOS_RUBRO = {
     ],
 
     '003': [
+        
         {
             campo: 'registro_sanitario',
             titulo: 'Registro Sanitario',
             tipo: 'text'
         },
+        /*
         {
             campo: 'fecha_registro_ini',
             titulo: 'Fecha Emisión Registro',
             tipo: 'date'
         },
+        
         {
             campo: 'fecha_registro_fin',
             titulo: 'Fecha Vencimiento Registro',
             tipo: 'date'
         },
+        */
         {
             campo: 'codigo_nro_lote',
             titulo: 'Código Lote',
@@ -532,6 +536,7 @@ producto_especie:
                         registro_sanitario:
                             detalle.registro_sanitario || '',
 
+                        /*    
                         fecha_registro_ini:
                             convertirFechaInput(
                                 detalle.fecha_emis_registro
@@ -541,6 +546,7 @@ producto_especie:
                             convertirFechaInput(
                                 detalle.fecha_venci_registro
                             ),
+                        */    
 
                         procedencia:
                             detalle.procedencia || '',
@@ -808,9 +814,11 @@ const cambiarEstadoDespacho = (nuevoEstado) => {
 
             registro_sanitario: '',
 
+            /*
             fecha_registro_ini: '',
 
             fecha_registro_fin: '',
+            */
 
             procedencia: '',
 
@@ -1000,11 +1008,13 @@ if (estadoDespacho === 'CAN') {
                 registro_sanitario:
                     linea.registro_sanitario,
 
+                /*
                 fecha_registro_ini:
                     linea.fecha_registro_ini,
 
                 fecha_registro_fin:
                     linea.fecha_registro_fin,
+                */    
 
                 procedencia:
                     linea.procedencia,
@@ -1895,7 +1905,7 @@ if (estadoDespacho === 'CAN') {
                         estilos.botonCancelar
                     }
                 >
-                    Cancelar
+                    Cerrar
                 </button>
 
 
