@@ -303,12 +303,14 @@ const columnasPorRubro = {
 
         {
             campo: 'fecha_beneficio_ini',
-            titulo: 'FECHA BENEFICIO INI.'
+            titulo: 'FECHA BENEFICIO'
         },
+        /*
         {
             campo: 'fecha_beneficio_fin',
             titulo: 'FECHA BENEFICIO FIN'
         },
+        */
         {
             campo: 'nro_guia_nota_venta',
             titulo: 'NRO. GUÍA / NOTA VENTA'

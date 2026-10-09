@@ -226,14 +226,16 @@ const CAMPOS_RUBRO = {
     '001': [
         {
             campo: 'fecha_beneficio_ini',
-            titulo: 'Fecha Beneficio Inicio',
+            titulo: 'Fecha Beneficio ',
             tipo: 'date'
         },
+        /*
         {
             campo: 'fecha_beneficio_fin',
             titulo: 'Fecha Beneficio Fin',
             tipo: 'date'
         },
+        */
         {
             campo: 'nro_guia_nota_venta',
             titulo: 'N.º Guía / Nota Venta',
@@ -525,10 +527,12 @@ producto_especie:
                                 detalle.fecha_beneficio_ini
                             ),
 
-                        fecha_beneficio_fin:
+                        /*
+                            fecha_beneficio_fin:
                             convertirFechaInput(
                                 detalle.fecha_beneficio_fin
                             ),
+                        */    
 
                         nro_guia_nota_venta:
                             detalle.nro_guia_nota_venta || '',
@@ -808,7 +812,7 @@ const cambiarEstadoDespacho = (nuevoEstado) => {
 
             fecha_beneficio_ini: '',
 
-            fecha_beneficio_fin: '',
+            /*fecha_beneficio_fin: '',*/
 
             nro_guia_nota_venta: '',
 
@@ -996,11 +1000,15 @@ if (estadoDespacho === 'CAN') {
                 temperatura_descarga:
                     linea.temperatura_descarga,
 
+                        
                 fecha_beneficio_ini:
                     linea.fecha_beneficio_ini,
+                
 
+                /*
                 fecha_beneficio_fin:
                     linea.fecha_beneficio_fin,
+                */    
 
                 nro_guia_nota_venta:
                     linea.nro_guia_nota_venta,

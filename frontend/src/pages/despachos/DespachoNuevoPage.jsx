@@ -229,14 +229,16 @@ const CAMPOS_RUBRO = {
     '001': [
         {
             campo: 'fecha_beneficio_ini',
-            titulo: 'Fecha Beneficio Inicio',
+            titulo: 'Fecha Beneficio',
             tipo: 'date'
         },
+        /*
         {
             campo: 'fecha_beneficio_fin',
             titulo: 'Fecha Beneficio Fin',
             tipo: 'date'
         },
+        */
         {
             campo: 'nro_guia_nota_venta',
             titulo: 'N.º Guía / Nota Venta',
@@ -350,7 +352,7 @@ const crearLineaVacia = (lineaId) => {
         temperatura_descarga: '',
 
         fecha_beneficio_ini: '',
-        fecha_beneficio_fin: '',
+        /*fecha_beneficio_fin: '',*/
         nro_guia_nota_venta: '',
 
         registro_sanitario: '',
@@ -643,8 +645,11 @@ const DespachoNuevoPage = () => {
             fecha_beneficio_ini:
                 linea.fecha_beneficio_ini || null,
 
-            fecha_beneficio_fin:
+            
+            /*
+                fecha_beneficio_fin:
                 linea.fecha_beneficio_fin || null,
+            */    
 
             nro_guia_nota_venta:
                 linea.nro_guia_nota_venta?.trim() || null,
