@@ -41,6 +41,11 @@ const listarProveedores = async () => {
             p.f_ini_doc_sanita,
             p.f_fin_doc_sanita,
 
+            p.tipo_otro_doc,
+            p.otro_doc_autoriza,
+            p.f_ini_otro_doc,
+            p.f_fin_otro_doc,
+
             p.doc_habi_vehicular,
             p.f_ini_doc_vehi,
             p.f_fin_doc_vehi,
@@ -106,6 +111,10 @@ const registrarProveedor = async (datos) => {
             doc_autoriza_sanitaria,
             f_ini_doc_sanita,
             f_fin_doc_sanita,
+            tipo_otro_doc,
+            otro_doc_autoriza,
+            f_ini_otro_doc,
+            f_fin_otro_doc,
             doc_habi_vehicular,
             f_ini_doc_vehi,
             f_fin_doc_vehi,
@@ -149,8 +158,12 @@ const registrarProveedor = async (datos) => {
             $25,
             $26,
             $27,
+            $28,
+            $29,
+            $30,
+            $31,
             CURRENT_DATE,
-            $28
+            $32
         )
         RETURNING *
     `;
@@ -179,6 +192,10 @@ const registrarProveedor = async (datos) => {
         datos.doc_autoriza_sanitaria,
         datos.f_ini_doc_sanita,
         datos.f_fin_doc_sanita,
+        datos.tipo_otro_doc,
+        datos.otro_doc_autoriza,
+        datos.f_ini_otro_doc,
+        datos.f_fin_otro_doc,
         datos.doc_habi_vehicular,
         datos.f_ini_doc_vehi,
         datos.f_fin_doc_vehi,
@@ -220,6 +237,10 @@ const obtenerProveedorPorId = async (proveedorId) => {
             doc_autoriza_sanitaria,
             f_ini_doc_sanita,
             f_fin_doc_sanita,
+            tipo_otro_doc,
+            otro_doc_autoriza,
+            f_ini_otro_doc,
+            f_fin_otro_doc,
             doc_habi_vehicular,
             f_ini_doc_vehi,
             f_fin_doc_vehi,
@@ -265,13 +286,17 @@ const actualizarProveedor = async (proveedorId, datos) => {
             doc_autoriza_sanitaria = $21,
             f_ini_doc_sanita = $22,
             f_fin_doc_sanita = $23,
-            doc_habi_vehicular = $24,
-            f_ini_doc_vehi = $25,
-            f_fin_doc_vehi = $26,
-            status = $27,
+            tipo_otro_doc = $24,
+            otro_doc_autoriza = $25,
+            f_ini_otro_doc = $26,
+            f_fin_otro_doc = $27,
+            doc_habi_vehicular = $28,
+            f_ini_doc_vehi = $29,
+            f_fin_doc_vehi = $30,
+            status = $31,
             last_update = CURRENT_DATE,
-            update_by = $28
-        WHERE proveedor_id = $29
+            update_by = $32
+        WHERE proveedor_id = $33
         RETURNING *
     `;
 
@@ -342,6 +367,10 @@ const obtenerMiFicha = async (usuarioId) => {
             p.doc_autoriza_sanitaria,
             p.f_ini_doc_sanita,
             p.f_fin_doc_sanita,
+            p.tipo_otro_doc,
+            p.otro_doc_autoriza,
+            p.f_ini_otro_doc,
+            p.f_fin_otro_doc,
             p.doc_habi_vehicular,
             p.f_ini_doc_vehi,
             p.f_fin_doc_vehi,
@@ -446,6 +475,10 @@ const registrarMiFicha = async (usuarioId, datos) => {
                 doc_autoriza_sanitaria,
                 f_ini_doc_sanita,
                 f_fin_doc_sanita,
+                tipo_otro_doc,
+                otro_doc_autoriza,
+                f_ini_otro_doc,
+                f_fin_otro_doc,
                 doc_habi_vehicular,
                 f_ini_doc_vehi,
                 f_fin_doc_vehi,
@@ -483,8 +516,12 @@ const registrarMiFicha = async (usuarioId, datos) => {
                 $26,
                 $27,
                 $28,
+                $29,
+                $30,
+                $31,
+                $32,
                 CURRENT_DATE,
-                $29
+                $33
             )
             RETURNING *
         `;
@@ -514,6 +551,10 @@ const registrarMiFicha = async (usuarioId, datos) => {
             datos.doc_autoriza_sanitaria,
             datos.f_ini_doc_sanita,
             datos.f_fin_doc_sanita,
+            datos.tipo_otro_doc,
+            datos.otro_doc_autoriza,
+            datos.f_ini_otro_doc,
+            datos.f_fin_otro_doc,
             datos.doc_habi_vehicular,
             datos.f_ini_doc_vehi,
             datos.f_fin_doc_vehi,

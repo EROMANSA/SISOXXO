@@ -54,6 +54,12 @@ const ProveedorForm = ({
         doc_autoriza_sanitaria: '',
         f_ini_doc_sanita: '',
         f_fin_doc_sanita: '',
+        // Nuevos campos: Otro documento
+        tipo_otro_doc: '',
+        otro_doc_autoriza: '',
+        f_ini_otro_doc: '',
+        f_fin_otro_doc: '',
+        // Nuevos campos: Otro documento
         doc_habi_vehicular: '',
         f_ini_doc_vehi: '',
         f_fin_doc_vehi: '',
@@ -182,6 +188,12 @@ setTiposDocSanitaria([]);
                 doc_autoriza_sanitaria: '',
                 f_ini_doc_sanita: '',
                 f_fin_doc_sanita: '',
+                // Nuevos campos: Otro documento
+                tipo_otro_doc: '',
+                otro_doc_autoriza: '',
+                f_ini_otro_doc: '',
+                f_fin_otro_doc: '',
+                // Nuevos campos: Otro documento
                 doc_habi_vehicular: '',
                 f_ini_doc_vehi: '',
                 f_fin_doc_vehi: '',
@@ -229,6 +241,14 @@ setTiposDocSanitaria([]);
             doc_autoriza_sanitaria: proveedor.doc_autoriza_sanitaria || '',
             f_ini_doc_sanita: formatearFecha(proveedor.f_ini_doc_sanita),
             f_fin_doc_sanita: formatearFecha(proveedor.f_fin_doc_sanita),
+
+            // Nuevos campos: Otro documento
+            tipo_otro_doc: proveedor.tipo_otro_doc || '',
+            otro_doc_autoriza: proveedor.otro_doc_autoriza || '',
+            f_ini_otro_doc: formatearFecha(proveedor.f_ini_otro_doc),
+            f_fin_otro_doc: formatearFecha(proveedor.f_fin_otro_doc),
+            // Nuevos campos: Otro documento
+
             doc_habi_vehicular: proveedor.doc_habi_vehicular || '',
             f_ini_doc_vehi: formatearFecha(proveedor.f_ini_doc_vehi),
             f_fin_doc_vehi: formatearFecha(proveedor.f_fin_doc_vehi),
@@ -445,6 +465,13 @@ const handleDistritoChange = async (event) => {
 
             f_fin_doc_sanita:
                 formulario.f_fin_doc_sanita || null,
+
+            f_ini_otro_doc:
+                formulario.f_ini_otro_doc || null,
+
+            f_fin_otro_doc:
+                formulario.f_fin_otro_doc || null,
+    
 
             f_ini_doc_vehi:
                 formulario.f_ini_doc_vehi || null,
@@ -876,10 +903,10 @@ const handleDistritoChange = async (event) => {
     <h3>4. Información Sanitaria</h3>
 
     <div className="form-grid">
-
+        {/* Grupo 1: Información sanitaria */}
         <div className="form-group">
-            <label>Tipo Doc. Sanitaria</label>
-
+            {/* Conserva aquí el campo Tipo Doc. Sanitaria */}
+		    <label>Tipo Doc. Sanitaria</label>
             <select
                 name="tipo_doc_sanitaria"
                 value={formulario.tipo_doc_sanitaria}
@@ -902,10 +929,8 @@ const handleDistritoChange = async (event) => {
         </div>
 
         <div className="form-group form-group-doc-sanitario">
-            <label>
-                Documento Autorización Sanitaria
-            </label>
-
+            {/* Conserva aquí Documento Autorización Sanitaria */}
+            <label>Documento Autorización Sanitaria</label>
             <input
                 type="text"
                 name="doc_autoriza_sanitaria"
@@ -917,24 +942,20 @@ const handleDistritoChange = async (event) => {
         </div>
 
         <div className="form-group">
-            <label>
-                Fecha Inicio documento sanitario
-            </label>
-
+            {/* Conserva aquí Fecha Inicio documento sanitario */}
+            <label>Fecha Inicio Vigencia</label>
             <input
                 type="date"
-                name="f_ini_doc_sanita"
-                value={formulario.f_ini_doc_sanita}
-                onChange={handleChange}
-                disabled={esConsulta}
+                    name="f_ini_doc_sanita"
+                    value={formulario.f_ini_doc_sanita}
+                    onChange={handleChange}
+                    disabled={esConsulta}
             />
         </div>
 
         <div className="form-group">
-            <label>
-                Fecha Fin documento sanitario
-            </label>
-
+            {/* Conserva aquí Fecha Fin documento sanitario */}
+            <label>Fecha Fin Vigencia</label>
             <input
                 type="date"
                 name="f_fin_doc_sanita"
@@ -943,52 +964,121 @@ const handleDistritoChange = async (event) => {
                 disabled={esConsulta}
             />
         </div>
-
-        <div className="form-group form-group-full">
-            <label>
-                Documento Habilitación Vehicular
-            </label>
-
-            <input
-                type="text"
-                name="doc_habi_vehicular"
-                value={formulario.doc_habi_vehicular}
-                onChange={handleChange}
-                placeholder="Ingrese documento"
-                readOnly={esConsulta}
-            />
-        </div>
-
-        <div className="form-group">
-            <label>
-                Fecha Inicio documento vehicular
-            </label>
-
-            <input
-                type="date"
-                name="f_ini_doc_vehi"
-                value={formulario.f_ini_doc_vehi}
-                onChange={handleChange}
-                disabled={esConsulta}
-            />
-        </div>
-
-        <div className="form-group">
-            <label>
-                Fecha Fin documento vehicular
-            </label>
-
-            <input
-                type="date"
-                name="f_fin_doc_vehi"
-                value={formulario.f_fin_doc_vehi}
-                onChange={handleChange}
-                disabled={esConsulta}
-            />
-        </div>
-
     </div>
 
+    <div className="form-grid form-grid-otro-documento">
+        {/* Grupo 2: Otro documento */}
+        
+<div className="form-group">
+    <label>Tipo Otro Documento</label>
+
+    <select
+        name="tipo_otro_doc"
+        value={formulario.tipo_otro_doc}
+        onChange={handleChange}
+        disabled={esConsulta}
+    >
+        <option value="">
+            Seleccione...
+        </option>
+
+        {tiposDocSanitaria.map((item) => (
+            <option
+                key={item.codigo_valor}
+                value={item.codigo_valor}
+            >
+                {item.codigo_valor} - {item.descripcion}
+            </option>
+        ))}
+    </select>
+</div>
+
+
+        <div className="form-group form-group-doc-sanitario">
+    <label>Documento Autorización Otro</label>
+
+    <input
+        type="text"
+        name="otro_doc_autoriza"
+        value={formulario.otro_doc_autoriza}
+        onChange={handleChange}
+        maxLength={250}
+        placeholder="Ingrese documento o enlace"
+        readOnly={esConsulta}
+    />
+</div>
+
+        <div className="form-group">
+            <label>Fecha Inicio Vigencia</label>
+            <input
+                type="date"
+                name="f_ini_otro_doc"
+                value={formulario.f_ini_otro_doc}
+                onChange={handleChange}
+                disabled={esConsulta}
+            />
+        </div>
+
+        <div className="form-group">
+            <label>Fecha Fin Vigencia</label>
+            <input
+                type="date"
+                name="f_fin_otro_doc"
+                value={formulario.f_fin_otro_doc}
+                onChange={handleChange}
+                disabled={esConsulta}
+            />
+        </div>
+    </div>
+
+    
+<div className="form-grid form-grid-vehicular">
+
+    {/* Documento de Habilitación Vehicular */}
+    <div className="form-group form-group-full">
+        <label>Documento Habilitación Vehicular</label>
+
+        <input
+            type="text"
+            name="doc_habi_vehicular"
+            value={formulario.doc_habi_vehicular}
+            onChange={handleChange}
+            maxLength={250}
+            placeholder="Ingrese documento"
+            readOnly={esConsulta}
+        />
+    </div>
+
+    {/* Fecha de inicio y fin en una misma fila */}
+    <div className="form-group">
+        <label>Fecha Inicio Vigencia</label>
+
+        <input
+            type="date"
+            name="f_ini_doc_vehi"
+            value={formulario.f_ini_doc_vehi}
+            onChange={handleChange}
+            disabled={esConsulta}
+        />
+    </div>
+
+    <div className="form-group">
+        <label>Fecha Fin Vigencia</label>
+
+        <input
+            type="date"
+            name="f_fin_doc_vehi"
+            value={formulario.f_fin_doc_vehi}
+            onChange={handleChange}
+            disabled={esConsulta}
+        />
+    </div>
+
+</div>
+
+    
+
+    
 </section>
 
             {/* =====================================================
