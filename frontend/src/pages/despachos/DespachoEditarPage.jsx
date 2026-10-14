@@ -316,7 +316,7 @@ const CAMPOS_RUBRO = {
         },
         {
             campo: 'tipo_despacho',
-            titulo: 'Tipo Despacho',
+            titulo: 'Tipo Embalaje',
             tipo: 'text'
         },
         {
@@ -933,7 +933,7 @@ if (estadoDespacho === 'DSP') {
     ) {
 
         setError(
-            'La Fecha de Despacho no puede ser anterior a la Fecha de Programación.'
+            'La Fecha de Despacho no puede ser anterior a la Fecha Programada.'
         );
 
         return;
@@ -957,7 +957,7 @@ if (estadoDespacho === 'CAN') {
     ) {
 
         setError(
-            'La Fecha de Cancelación no puede ser anterior a la Fecha de Programación.'
+            'La Fecha de Cancelación no puede ser anterior a la Fecha Programada.'
         );
 
         return;
@@ -1296,7 +1296,7 @@ if (estadoDespacho === 'CAN') {
                     <div style={estilos.campo}>
 
                         <label style={estilos.etiqueta}>
-                            Fecha de Programación
+                            Entrega Programada
                         </label>
 
                         <input
@@ -1338,7 +1338,7 @@ if (estadoDespacho === 'CAN') {
             nuevaFecha < fechaProgramacion
         ) {
             setError(
-                'La Fecha de Despacho no puede ser anterior a la Fecha de Programación.'
+                'La Fecha de Despacho no puede ser anterior a la Fecha Programada.'
             );
         } else {
             setError('');
@@ -1375,7 +1375,7 @@ if (estadoDespacho === 'CAN') {
             nuevaFecha < fechaProgramacion
         ) {
             setError(
-                'La Fecha de Cancelación no puede ser anterior a la Fecha de Programación.'
+                'La Fecha de Cancelación no puede ser anterior a la Fecha Programada.'
             );
         } else {
             setError('');

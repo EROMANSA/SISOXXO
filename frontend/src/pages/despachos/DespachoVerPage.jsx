@@ -427,7 +427,7 @@ const columnasPorRubro = {
         },
         {
             campo: 'tipo_despacho_descripcion',
-            titulo: 'TIPO DESPACHO'
+            titulo: 'TIPO EMBALAJE'
         },
         {
             campo: 'fecha_cosecha',
@@ -1037,7 +1037,7 @@ const handleExportarExcel = () => {
                     <div style={estilos.campo}>
 
                         <label style={estilos.etiqueta}>
-                            Fecha Programación
+                            Entrega Programada
                         </label>
 
                         <div style={estilos.inputReadonly}>

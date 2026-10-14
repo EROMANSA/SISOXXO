@@ -317,7 +317,7 @@ const CAMPOS_RUBRO = {
         },
         {
             campo: 'tipo_despacho',
-            titulo: 'Tipo Despacho',
+            titulo: 'Tipo Embalaje',
             tipo: 'text'
         },
         {
@@ -877,7 +877,7 @@ const DespachoNuevoPage = () => {
                     <div style={estilos.campo}>
 
                         <label style={estilos.etiqueta}>
-                            Fecha de Programación
+                            Entrega Programada
                         </label>
 
                         <input
