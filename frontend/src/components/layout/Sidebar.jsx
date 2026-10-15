@@ -28,6 +28,9 @@ function Sidebar() {
     }
 
     const rol = usuario?.rol_codigo || '';
+    const proveedorNombre = usuario?.razon_social || '';
+
+
 
     const esAdmin = rol === 'ADMIN';
     const esConsultor = rol === 'CONSULTOR';
@@ -97,7 +100,7 @@ function Sidebar() {
                     marginBottom: '25px'
                 }}
             >
-                Gestión de Despachos
+                Gestión de Despacho
             </div>
 
 
@@ -130,6 +133,20 @@ function Sidebar() {
                 >
                     {usuario?.rol_nombre || rol}
                 </div>
+
+                {esProveedor && proveedorNombre && (
+                    <div
+                        style={{
+                            fontSize: '12px',
+                            color: '#FFFFFF',
+                            marginTop: '8px',
+                            fontWeight: '500',
+                            overflowWrap: 'anywhere'
+                        }}
+                    >
+                        {proveedorNombre}
+                    </div>
+                )}
 
             </div>
 

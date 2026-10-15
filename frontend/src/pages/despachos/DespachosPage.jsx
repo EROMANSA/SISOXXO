@@ -142,6 +142,22 @@ const estilos = {
     }
 };
 
+const usuarioGuardado = localStorage.getItem('usuario');
+
+let usuario = null;
+
+try {
+    usuario = usuarioGuardado
+        ? JSON.parse(usuarioGuardado)
+        : null;
+} catch {
+    usuario = null;
+}
+
+const rol = usuario?.rol_codigo || '';
+const mostrarColumnaProveedor =
+    rol === 'CONSULTOR' || rol === 'ADMIN';
+
 const obtenerValor = (registro, campos) => {
     for (const campo of campos) {
         if (
@@ -319,9 +335,11 @@ const DespachosPage = () => {
                                 Tipo Transacción
                             </option>
 
-                            <option value="PROVEEDOR">
-                                Proveedor
-                            </option>
+                           {mostrarColumnaProveedor && (
+                                <option value="PROVEEDOR">
+                                    Proveedor
+                                </option>
+                            )}
 
                             <option value="DESTINO">
                                 Destino Tienda
@@ -414,9 +432,11 @@ const DespachosPage = () => {
                                     TIPO TRANSACCIÓN
                                 </th>
 
-                                <th style={estilos.th}>
-                                    PROVEEDOR
-                                </th>
+                               {mostrarColumnaProveedor && (
+                                    <th style={estilos.th}>
+                                        PROVEEDOR
+                                    </th>
+                                )}
 
                                 <th style={estilos.th}>
                                     DESTINO TIENDA
@@ -474,15 +494,14 @@ const DespachosPage = () => {
                                         )}
                                     </td>
 
-                                    <td style={estilos.td}>
-                                        {obtenerValor(
-                                            despacho,
-                                            [
-                                                'proveedor_nombre',
-                                                'proveedor'
-                                            ]
-                                        )}
-                                    </td>
+                                    {mostrarColumnaProveedor && (
+                                        <td style={estilos.td}>
+                                            {obtenerValor(
+                                                despacho,
+                                                ['proveedor_nombre', 'proveedor']
+                                            )}
+                                        </td>
+                                    )}
 
                                     <td style={estilos.td}>
     {obtenerValor(

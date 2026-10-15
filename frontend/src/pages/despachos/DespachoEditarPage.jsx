@@ -921,7 +921,7 @@ if (estadoDespacho === 'DSP') {
     if (!fechaDespacho) {
 
         setError(
-            'Debe ingresar la Fecha de Despacho.'
+            'Debe ingresar la Fecha de Entrega.'
         );
 
         return;
@@ -933,7 +933,7 @@ if (estadoDespacho === 'DSP') {
     ) {
 
         setError(
-            'La Fecha de Despacho no puede ser anterior a la Fecha Programada.'
+            'La Fecha de Entrega no puede ser anterior a la Fecha Programada.'
         );
 
         return;
@@ -1318,7 +1318,7 @@ if (estadoDespacho === 'CAN') {
     <div style={estilos.campo}>
 
         <label style={estilos.etiqueta}>
-            Fecha de Despacho
+            Fecha de Entrega
         </label>
 
         <input
@@ -1338,7 +1338,7 @@ if (estadoDespacho === 'CAN') {
             nuevaFecha < fechaProgramacion
         ) {
             setError(
-                'La Fecha de Despacho no puede ser anterior a la Fecha Programada.'
+                'La Fecha de Entrega no puede ser anterior a la Fecha Programada.'
             );
         } else {
             setError('');
@@ -1411,7 +1411,7 @@ if (estadoDespacho === 'CAN') {
         </option>
 
         <option value="DSP">
-            Despachado
+            Entregado
         </option>
 
         <option value="CAN">

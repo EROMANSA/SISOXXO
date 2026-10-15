@@ -41,14 +41,15 @@ const autenticarUsuario = async (username, password) => {
 
     await actualizarUltimoAcceso(usuario.usuario_id);
 
-    const payload = {
-        usuario_id: usuario.usuario_id,
-        username: usuario.username,
-        rol_codigo: usuario.rol_codigo,
-        rol_nombre: usuario.rol_nombre,
-        proveedor_id: usuario.proveedor_id,
-        primer_ingreso: usuario.primer_ingreso
-    };
+   const payload = {
+    usuario_id: usuario.usuario_id,
+    username: usuario.username,
+    rol_codigo: usuario.rol_codigo,
+    rol_nombre: usuario.rol_nombre,
+    proveedor_id: usuario.proveedor_id,
+    razon_social: usuario.razon_social,
+    primer_ingreso: usuario.primer_ingreso
+};
 
     const token = jwt.sign(
         payload,
@@ -61,14 +62,15 @@ const autenticarUsuario = async (username, password) => {
     return {
         token,
         usuario: {
-            usuario_id: usuario.usuario_id,
-            username: usuario.username,
-            correo: usuario.correo,
-            rol_codigo: usuario.rol_codigo,
-            rol_nombre: usuario.rol_nombre,
-            proveedor_id: usuario.proveedor_id,
-            primer_ingreso: usuario.primer_ingreso
-        }
+    usuario_id: usuario.usuario_id,
+    username: usuario.username,
+    correo: usuario.correo,
+    rol_codigo: usuario.rol_codigo,
+    rol_nombre: usuario.rol_nombre,
+    proveedor_id: usuario.proveedor_id,
+    razon_social: usuario.razon_social,
+    primer_ingreso: usuario.primer_ingreso
+}
     };
 };
 
