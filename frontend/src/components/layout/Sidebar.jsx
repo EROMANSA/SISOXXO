@@ -6,7 +6,8 @@ import {
     Bell,
     BarChart3,
     Settings,
-    LogOut
+    LogOut,
+    Store
 } from 'lucide-react';
 
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -216,6 +217,16 @@ function Sidebar() {
 
                 {esAdmin && (
                     <>
+
+                        
+                                <NavLink
+                                    to="/tiendas"
+                                    style={linkStyle}
+                                >
+                                    <Store size={18} />
+                                    Tiendas
+                                </NavLink>
+
 
                         <NavLink
                             to="/usuarios"

@@ -17,8 +17,8 @@ const listarDespachos = async (proveedorId) => {
             mt.proveedor_id,
             p.razon_social AS proveedor_nombre,
 
-            mt.destino_id,
-            lto.descripcion AS destino_descripcion,
+            mt.destino_id,            
+            t.descripcion AS destino_descripcion,
 
             mt.fecha_programacion,
             mt.fecha_despacho,
@@ -39,11 +39,9 @@ const listarDespachos = async (proveedorId) => {
 
         INNER JOIN sisoxxo."MAE_PROVEEDOR" p
             ON p.proveedor_id = mt.proveedor_id
-
-        LEFT JOIN sisoxxo."MAE_LISTA_VALORES" lto
-            ON lto.tipo_grupo = 'TIENDAS_OXXO'
-            AND lto.cod_grupo = '0006'
-            AND lto.codigo_valor = mt.destino_id::varchar
+        
+        LEFT JOIN sisoxxo."MAE_TIENDA" t
+    ON t.tienda_id = mt.destino_id::varchar    
 
         LEFT JOIN sisoxxo."MAE_LISTA_VALORES" ltt
             ON ltt.tipo_grupo = 'TIPO_TRANSACCION'
@@ -967,8 +965,9 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
 
             ltr.descripcion AS tipo_rubro_descripcion,
 
-            mt.destino_id,
-            lto.descripcion AS destino_descripcion,
+            mt.destino_id,            
+            t.descripcion AS destino_descripcion,
+
 
             mt.tipo_transaccion,
             ltt.descripcion AS tipo_transaccion_descripcion,
@@ -1000,10 +999,10 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
             AND ltr.cod_grupo = '0001'
             AND ltr.codigo_valor = p.tipo_rubro
 
-        LEFT JOIN sisoxxo."MAE_LISTA_VALORES" lto
-            ON lto.tipo_grupo = 'TIENDAS_OXXO'
-            AND lto.cod_grupo = '0006'
-            AND lto.codigo_valor = mt.destino_id::varchar
+       
+
+        LEFT JOIN sisoxxo."MAE_TIENDA" t
+    ON t.tienda_id = mt.destino_id::varchar    
 
         LEFT JOIN sisoxxo."MAE_LISTA_VALORES" ltt
             ON ltt.tipo_grupo = 'TIPO_TRANSACCION'

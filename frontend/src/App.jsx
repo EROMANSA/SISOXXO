@@ -10,6 +10,8 @@ import DespachosPage from './pages/despachos/DespachosPage';
 import DespachoVerPage from './pages/despachos/DespachoVerPage';
 import DespachoEditarPage from './pages/despachos/DespachoEditarPage';
 import DespachoNuevoPage from './pages/despachos/DespachoNuevoPage';
+import TiendasPage from './pages/tiendas/TiendasPage';
+
 
 function App() {
     return (
@@ -58,6 +60,11 @@ function App() {
                     />
 
                    
+                    <Route
+                        path="/tiendas"
+                        element={<TiendasPage />}
+                    />
+
 
                     <Route
                         path="/usuarios"

@@ -41,7 +41,18 @@ const obtenerTipoTransaccion = async () => {
 };
 
 const obtenerTiendasOxxo = async () => {
-    return obtenerListaValores('0006', 'TIENDAS_OXXO');
+    const query = `
+        SELECT
+            tienda_id AS codigo_valor,
+            descripcion
+        FROM sisoxxo."MAE_TIENDA"
+        WHERE status = 'A'
+        ORDER BY descripcion
+    `;
+
+    const result = await pool.query(query);
+
+    return result.rows;
 };
 
 const obtenerEstadoDespacho = async () => {

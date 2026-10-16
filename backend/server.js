@@ -9,6 +9,8 @@ const ubigeoRoutes = require('./routes/ubigeo.routes');
 const authRoutes = require('./routes/auth.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
 const despachosRoutes = require('./routes/despachos.routes');
+const tiendasRoutes = require('./routes/tiendas.routes');
+
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use('/api/ubigeo', ubigeoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/despachos', despachosRoutes);
+app.use('/api/tiendas', tiendasRoutes);
+
 
 
 // Ruta principal
