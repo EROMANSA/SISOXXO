@@ -19,19 +19,37 @@ usuariosApi.interceptors.request.use((config) => {
     return config;
 });
 
-export const listarUsuarios = async (filtro = 'TODOS') => {
+
+export const listarUsuarios = async (
+    filtro = 'TODOS',
+    campo = '',
+    busqueda = ''
+) => {
     const response = await usuariosApi.get('/usuarios', {
-        params: { filtro }
+        params: {
+            filtro,
+            campo,
+            busqueda
+        }
     });
 
     return response.data;
 };
+
 
 export const obtenerTotalesUsuarios = async () => {
     const response = await usuariosApi.get('/usuarios/totales');
 
     return response.data;
 };
+
+
+export const listarTiendasActivas = async () => {
+    const response = await usuariosApi.get('/usuarios/tiendas');
+
+    return response.data;
+};
+
 
 export const obtenerUsuarioPorId = async (usuarioId) => {
     const response = await usuariosApi.get(`/usuarios/${usuarioId}`);
@@ -60,16 +78,19 @@ export const crearUsuario = async (datos) => {
     return response.data;
 };
 
-export const aprobarUsuario = async (usuarioId, rolId) => {
+
+export const aprobarUsuario = async (usuarioId, rolId, codTienda = null) => {
     const response = await usuariosApi.put(
         `/usuarios/${usuarioId}/aprobar`,
         {
-            rol_id: rolId
+            rol_id: rolId,
+            codTienda
         }
     );
 
     return response.data;
 };
+
 
 export const rechazarUsuario = async (usuarioId) => {
     const response = await usuariosApi.put(

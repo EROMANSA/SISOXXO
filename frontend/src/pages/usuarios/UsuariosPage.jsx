@@ -7,13 +7,20 @@ import {
     actualizarUsuario,
     crearUsuario,
     aprobarUsuario,
-    rechazarUsuario
+    rechazarUsuario,
+    listarTiendasActivas
 } from '../../services/usuarios.services';
 
 
 function UsuariosPage() {
     const [usuarios, setUsuarios] = useState([]);
     const [filtro, setFiltro] = useState('TODOS');
+    const [campoBusqueda, setCampoBusqueda] = useState('usuario');
+    const [textoBusqueda, setTextoBusqueda] = useState('');
+    const [busquedaAplicada, setBusquedaAplicada] = useState({
+    campo: 'usuario',
+    busqueda: ''
+});
     const [totales, setTotales] = useState({
     todos: 0,
     activos: 0,
@@ -36,23 +43,32 @@ function UsuariosPage() {
     const [usuarioAprobar, setUsuarioAprobar] = useState(null);
     const [mostrarModalAprobar, setMostrarModalAprobar] = useState(false);
     const [rolAprobar, setRolAprobar] = useState('');
+    const [codTiendaAprobar, setCodTiendaAprobar] = useState('');
     const [cargandoAprobacion, setCargandoAprobacion] = useState(false);
     const [errorAprobacion, setErrorAprobacion] = useState('');
+   
 
     const [usuarioRechazar, setUsuarioRechazar] = useState(null);
     const [mostrarModalRechazar, setMostrarModalRechazar] = useState(false);
     const [cargandoRechazo, setCargandoRechazo] = useState(false);
     const [errorRechazo, setErrorRechazo] = useState('');
 
-    const [formEditar, setFormEditar] = useState({
+    const [tiendas, setTiendas] = useState([]);
+    const [cargandoTiendas, setCargandoTiendas] = useState(false);
+    const [errorTiendas, setErrorTiendas] = useState('');    
+
+
+const [formEditar, setFormEditar] = useState({
     username: '',
     correo: '',
     rolCodigo: '',
+    codTienda: '',
     proveedorId: null,
     primerIngreso: 'S',
     password: '',
     estado: 'A'
 });
+
 
 const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
@@ -63,7 +79,8 @@ const [errorCreacion, setErrorCreacion] = useState('');
 const [formCrear, setFormCrear] = useState({
     username: '',
     correo: '',
-    rolCodigo: '',    
+    rolCodigo: '',
+    codTienda: '',    
     password: '',
     confirmarPassword: ''
 });
@@ -73,7 +90,11 @@ const [formCrear, setFormCrear] = useState({
             setCargando(true);
             setError('');
 
-            const data = await listarUsuarios(filtro);
+           const data = await listarUsuarios(
+    filtro,
+    busquedaAplicada.campo,
+    busquedaAplicada.busqueda
+);
 
             if (!data?.ok) {
                 setError(data?.mensaje || 'No fue posible obtener los usuarios.');
@@ -93,13 +114,67 @@ const [formCrear, setFormCrear] = useState({
         }
     };
 
-    useEffect(() => {
-        cargarUsuarios();
-    }, [filtro]);
+    
+const ejecutarBusqueda = () => {
+    setBusquedaAplicada({
+        campo: campoBusqueda,
+        busqueda: textoBusqueda.trim()
+    });
+};
+
+const limpiarBusqueda = () => {
+    setCampoBusqueda('usuario');
+    setTextoBusqueda('');
+    setBusquedaAplicada({
+        campo: 'usuario',
+        busqueda: ''
+    });
+};
+
+
+
+    const cargarTiendas = async () => {
+    try {
+        setCargandoTiendas(true);
+        setErrorTiendas('');
+
+        const data = await listarTiendasActivas();
+
+        if (!data?.ok) {
+            setTiendas([]);
+            setErrorTiendas(
+                data?.mensaje || 'No fue posible obtener las tiendas activas.'
+            );
+            return;
+        }
+
+        setTiendas(data.tiendas || []);
+    } catch (err) {
+        setTiendas([]);
+        setErrorTiendas(
+            err.response?.data?.mensaje ||
+            'No fue posible obtener las tiendas activas.'
+        );
+    } finally {
+        setCargandoTiendas(false);
+    }
+};
+
+
+
+   useEffect(() => {
+    cargarUsuarios();
+}, [filtro, busquedaAplicada]);
 
     useEffect(() => {
     cargarTotales();
 }, []);
+
+    useEffect(() => {
+    cargarTiendas();
+}, []);
+
+
 
     const cargarTotales = async () => {
     try {
@@ -133,6 +208,9 @@ const handleExportar = () => {
             'Usuario': usuario.username || '',
             'Correo': usuario.correo || '',
             'Rol': usuario.rol_nombre || usuario.rol_codigo || '',
+            'Tienda': usuario.cod_tienda
+        ? `${usuario.cod_tienda} - ${usuario.tienda_descripcion || ''}`
+        : '',
             'Proveedor': usuario.proveedor_nombre || '',
             'Estado': estado.texto
         };
@@ -199,15 +277,18 @@ const abrirModalEditar = async (usuarioId) => {
 
         setUsuarioEditar(data.usuario);
 
-        setFormEditar({
+
+setFormEditar({
     username: data.usuario.username || '',
     correo: data.usuario.correo || '',
     rolCodigo: data.usuario.rol_codigo || '',
+    codTienda: data.usuario.cod_tienda || '',
     proveedorId: data.usuario.proveedor_id || null,
     primerIngreso: data.usuario.primer_ingreso || 'S',
     password: '',
     estado: data.usuario.estado || 'A'
 });
+
 
         setMostrarModalEditar(true);
     } catch (err) {
@@ -238,16 +319,34 @@ const guardarEdicion = async () => {
             return;
         }
 
+
+        
+if (
+    formEditar.rolCodigo === 'CONSULTOR' &&
+    !formEditar.codTienda
+) {
+    setErrorEdicion(
+        'Debe seleccionar una tienda para el CONSULTOR.'
+    );
+    return;
+}
+
+
         setGuardandoEdicion(true);
 
-        await actualizarUsuario(usuarioEditar.usuario_id, {
-            username: formEditar.username.trim(),
-            correo: formEditar.correo?.trim() || null,
-            rolCodigo: formEditar.rolCodigo,            
-            primerIngreso: formEditar.primerIngreso || 'S',
-            password: formEditar.password?.trim() || '',
-            estado: formEditar.estado
-        });
+   
+await actualizarUsuario(usuarioEditar.usuario_id, {
+    username: formEditar.username.trim(),
+    correo: formEditar.correo?.trim() || null,
+    rolCodigo: formEditar.rolCodigo,
+    codTienda: formEditar.rolCodigo === 'CONSULTOR'
+        ? formEditar.codTienda
+        : null,
+    primerIngreso: formEditar.primerIngreso || 'S',
+    password: formEditar.password?.trim() || '',
+    estado: formEditar.estado
+});
+
 
         setMostrarModalEditar(false);
         setUsuarioEditar(null);
@@ -301,12 +400,24 @@ const guardarNuevoUsuario = async () => {
             return;
         }
 
+        if (
+    formCrear.rolCodigo === 'CONSULTOR' &&
+    !formCrear.codTienda
+) {
+    setErrorCreacion('Debe seleccionar una tienda para el CONSULTOR.');
+    return;
+}
+
+
         setGuardandoCreacion(true);
 
         await crearUsuario({
             username: formCrear.username.trim(),
             correo: formCrear.correo?.trim() || null,
-            rolCodigo: formCrear.rolCodigo,            
+            rolCodigo: formCrear.rolCodigo,
+            codTienda: formCrear.rolCodigo === 'CONSULTOR'
+        ? formCrear.codTienda
+        : null,            
             password: formCrear.password
         });
 
@@ -315,7 +426,8 @@ const guardarNuevoUsuario = async () => {
         setFormCrear({
             username: '',
             correo: '',
-            rolCodigo: '',            
+            rolCodigo: '',
+            codTienda: '',            
             password: '',
             confirmarPassword: ''
         });
@@ -332,15 +444,20 @@ const guardarNuevoUsuario = async () => {
     }
 };
 
+
 const abrirModalAprobar = (usuario) => {
     setErrorAprobacion('');
     setUsuarioAprobar(usuario);
 
-    // Por defecto conservamos el rol actual si existe.
+    // Conservar el rol actual si existe.
     setRolAprobar(usuario.rol_codigo || '');
+
+    // Conservar la tienda registrada, si existe.
+    setCodTiendaAprobar(usuario.cod_tienda || '');
 
     setMostrarModalAprobar(true);
 };
+
 
 const confirmarAprobar = async () => {
     try {
@@ -357,6 +474,16 @@ const confirmarAprobar = async () => {
             return;
         }
 
+        if (
+    rolAprobar === 'CONSULTOR' &&
+    !codTiendaAprobar
+) {
+    setErrorAprobacion(
+        'Debe seleccionar una tienda para el CONSULTOR.'
+    );
+    return;
+}
+
         setCargandoAprobacion(true);
 
         const rolId =
@@ -366,14 +493,18 @@ const confirmarAprobar = async () => {
                     ? 2
                     : 3;
 
-        await aprobarUsuario(
-            usuarioAprobar.usuario_id,
-            rolId
-        );
+       await aprobarUsuario(
+    usuarioAprobar.usuario_id,
+    rolId,
+    rolAprobar === 'CONSULTOR'
+        ? codTiendaAprobar
+        : null
+);
 
         setMostrarModalAprobar(false);
         setUsuarioAprobar(null);
         setRolAprobar('');
+        setCodTiendaAprobar('');
 
         await cargarUsuarios();
 
@@ -756,7 +887,8 @@ return (
         setFormCrear({
             username: '',
             correo: '',
-            rolCodigo: '',            
+            rolCodigo: '', 
+            codTienda: '',                        
             password: '',
             confirmarPassword: ''
         });
@@ -828,6 +960,134 @@ return (
                 </div>
             )}
 
+
+            
+{/* Búsqueda de usuarios */}
+<div
+    style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '16px'
+    }}
+>
+    <div
+        style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: '12px',
+            flexWrap: 'wrap'
+        }}
+    >
+        <div style={{ minWidth: '180px' }}>
+            <label
+                style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#334155',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                }}
+            >
+                Buscar por
+            </label>
+
+            <select
+                value={campoBusqueda}
+                onChange={(e) => setCampoBusqueda(e.target.value)}
+                style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    background: '#FFFFFF',
+                    boxSizing: 'border-box'
+                }}
+            >
+                <option value="usuario">Usuario</option>
+                <option value="correo">Correo</option>
+                <option value="rol">Rol</option>
+                <option value="tienda">Tienda</option>
+                <option value="proveedor">Proveedor</option>
+                <option value="estado">Estado</option>
+            </select>
+        </div>
+
+        <div style={{ flex: '1', minWidth: '220px' }}>
+            <label
+                style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    color: '#334155',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                }}
+            >
+                Criterio de búsqueda
+            </label>
+
+            <input
+                type="text"
+                value={textoBusqueda}
+                onChange={(e) => setTextoBusqueda(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        ejecutarBusqueda();
+                    }
+                }}
+                placeholder="Ingrese el texto que desea buscar"
+                style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    boxSizing: 'border-box'
+                }}
+            />
+        </div>
+
+        <button
+            type="button"
+            onClick={ejecutarBusqueda}
+            disabled={cargando}
+            style={{
+                padding: '10px 18px',
+                border: 'none',
+                borderRadius: '6px',
+                background: '#2563EB',
+                color: '#FFFFFF',
+                fontWeight: '600',
+                cursor: cargando ? 'default' : 'pointer'
+            }}
+        >
+            Buscar
+        </button>
+
+        <button
+            type="button"
+            onClick={limpiarBusqueda}
+            disabled={cargando}
+            style={{
+                padding: '10px 18px',
+                border: '1px solid #CBD5E1',
+                borderRadius: '6px',
+                background: '#FFFFFF',
+                color: '#334155',
+                fontWeight: '600',
+                cursor: cargando ? 'default' : 'pointer'
+            }}
+        >
+            Limpiar
+        </button>
+    </div>
+</div>
+
+
+
+
+
+
             <div
                 style={{
                     background: '#FFFFFF',
@@ -853,6 +1113,7 @@ return (
                             <th style={thStyle}>Usuario</th>
                             <th style={thStyle}>Correo</th>
                             <th style={thStyle}>Rol</th>
+                            <th style={thStyle}>Tienda</th>
                             <th style={thStyle}>Proveedor</th>
                             <th style={thStyle}>Estado</th>                            
                             <th style={{ ...thStyle, textAlign: 'center' }}>
@@ -865,7 +1126,7 @@ return (
                         {!cargando && usuarios.length === 0 && (
                             <tr>
                                 <td
-                                    colSpan="6"
+                                    colSpan="7"
                                     style={{
                                         padding: '30px',
                                         textAlign: 'center',
@@ -900,6 +1161,12 @@ return (
                                             usuario.rol_codigo ||
                                             '-'}
                                     </td>
+
+                                    <td style={tdStyle}>
+    {usuario.cod_tienda
+        ? `${usuario.cod_tienda} - ${usuario.tienda_descripcion || ''}`
+        : '-'}
+</td>
 
                                     <td style={tdStyle}>
                                         {usuario.proveedor_nombre || '-'}
@@ -1313,12 +1580,15 @@ return (
 
                     <select
                         value={formCrear.rolCodigo}
-                        onChange={(e) =>
-                            setFormCrear({
-                                ...formCrear,
-                                rolCodigo: e.target.value                                
-                            })
-                        }
+                       onChange={(e) =>
+    setFormCrear({
+        ...formCrear,
+        rolCodigo: e.target.value,
+        codTienda: e.target.value === 'CONSULTOR'
+            ? formCrear.codTienda
+            : ''
+    })
+}
                         style={{
                             width: '100%',
                             padding: '10px 12px',
@@ -1345,6 +1615,68 @@ return (
                         </option>
                     </select>
                 </div>
+
+            
+{/* Código de tienda: solo para CONSULTOR */}
+{formCrear.rolCodigo === 'CONSULTOR' && (
+    <div style={{ marginBottom: '14px' }}>
+        <label style={detalleLabelStyle}>
+            Código de Tienda *
+        </label>
+
+        <select
+            value={formCrear.codTienda}
+            onChange={(e) =>
+                setFormCrear({
+                    ...formCrear,
+                    codTienda: e.target.value
+                })
+            }
+            disabled={cargandoTiendas}
+            style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #CBD5E1',
+                borderRadius: '6px',
+                background: '#FFFFFF',
+                boxSizing: 'border-box'
+            }}
+        >
+            <option value="">
+                {cargandoTiendas
+                    ? 'Cargando tiendas...'
+                    : 'Seleccione una tienda'}
+            </option>
+
+            {tiendas.map((tienda) => (
+                <option
+                    key={tienda.tienda_id}
+                    value={tienda.tienda_id}
+                >
+                    {tienda.tienda_id} - {tienda.descripcion}
+                </option>
+            ))}
+        </select>
+
+        {errorTiendas && (
+            <div style={{
+                marginTop: '5px',
+                color: '#B91C1C',
+                fontSize: '12px'
+            }}>
+                {errorTiendas}
+            </div>
+        )}
+    </div>
+)}
+            
+
+
+
+
+
+
+
 
                 {/* Contraseña */}
                 <div style={{ marginBottom: '14px' }}>
@@ -1435,6 +1767,7 @@ return (
                         onClick={() => {
                             setMostrarModalCrear(false);
                             setErrorCreacion('');
+                            setCodTiendaAprobar('');
                         }}
                         disabled={guardandoCreacion}
                         style={{
@@ -1584,6 +1917,62 @@ return (
                         </option>
                     </select>
                 </div>
+
+                
+{/* Código de tienda: solo para CONSULTOR */}
+{rolAprobar === 'CONSULTOR' && (
+    <div style={{ marginBottom: '16px' }}>
+        <label style={detalleLabelStyle}>
+            Código de Tienda *
+        </label>
+
+        <select
+            value={codTiendaAprobar}
+            onChange={(e) =>
+                setCodTiendaAprobar(e.target.value)
+            }
+            disabled={cargandoTiendas}
+            style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #CBD5E1',
+                borderRadius: '6px',
+                background: '#FFFFFF',
+                boxSizing: 'border-box'
+            }}
+        >
+            <option value="">
+                {cargandoTiendas
+                    ? 'Cargando tiendas...'
+                    : 'Seleccione una tienda'}
+            </option>
+
+            {tiendas.map((tienda) => (
+                <option
+                    key={tienda.tienda_id}
+                    value={tienda.tienda_id}
+                >
+                    {tienda.tienda_id} - {tienda.descripcion}
+                </option>
+            ))}
+        </select>
+
+        {errorTiendas && (
+            <div
+                style={{
+                    marginTop: '5px',
+                    color: '#B91C1C',
+                    fontSize: '12px'
+                }}
+            >
+                {errorTiendas}
+            </div>
+        )}
+    </div>
+)}
+        
+
+
 
                 {errorAprobacion && (
                     <div
@@ -1912,12 +2301,17 @@ return (
 
                     <select
                         value={formEditar.rolCodigo}
-                        onChange={(e) =>
-                            setFormEditar({
-                                ...formEditar,
-                                rolCodigo: e.target.value
-                            })
-                        }
+                        
+onChange={(e) =>
+    setFormEditar({
+        ...formEditar,
+        rolCodigo: e.target.value,
+        codTienda: e.target.value === 'CONSULTOR'
+            ? formEditar.codTienda
+            : ''
+    })
+}
+
                         style={{
                             width: '100%',
                             padding: '10px 12px',
@@ -1944,6 +2338,61 @@ return (
                         </option>
                     </select>
                 </div>
+
+                
+{/* Código de tienda: solo para CONSULTOR */}
+{formEditar.rolCodigo === 'CONSULTOR' && (
+    <div style={{ marginBottom: '16px' }}>
+        <label style={detalleLabelStyle}>
+            Código de Tienda *
+        </label>
+
+        <select
+            value={formEditar.codTienda}
+            onChange={(e) =>
+                setFormEditar({
+                    ...formEditar,
+                    codTienda: e.target.value
+                })
+            }
+            disabled={cargandoTiendas}
+            style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #CBD5E1',
+                borderRadius: '6px',
+                background: '#FFFFFF',
+                boxSizing: 'border-box'
+            }}
+        >
+            <option value="">
+                {cargandoTiendas
+                    ? 'Cargando tiendas...'
+                    : 'Seleccione una tienda'}
+            </option>
+
+            {tiendas.map((tienda) => (
+                <option
+                    key={tienda.tienda_id}
+                    value={tienda.tienda_id}
+                >
+                    {tienda.tienda_id} - {tienda.descripcion}
+                </option>
+            ))}
+        </select>
+
+        {errorTiendas && (
+            <div style={{
+                marginTop: '5px',
+                color: '#B91C1C',
+                fontSize: '12px'
+            }}>
+                {errorTiendas}
+            </div>
+        )}
+    </div>
+)}
+
 
                 {/* Estado */}
                 <div style={{ marginBottom: '16px' }}>

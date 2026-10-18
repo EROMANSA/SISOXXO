@@ -6,14 +6,22 @@ const {
     actualizarUsuarioService,
     aprobarUsuarioService,
     rechazarUsuarioService,
-    contarUsuariosPorEstadoService
+    contarUsuariosPorEstadoService,
+    listarTiendasActivasService
 } = require('../services/usuarios.service');
+
 
 const listarUsuarios = async (req, res) => {
     try {
         const filtro = req.query.filtro || 'TODOS';
+        const campo = req.query.campo || '';
+        const busqueda = req.query.busqueda || '';
 
-        const usuarios = await listarUsuariosService(filtro);
+        const usuarios = await listarUsuariosService(
+            filtro,
+            campo,
+            busqueda
+        );
 
         return res.status(200).json({
             ok: true,
@@ -21,8 +29,10 @@ const listarUsuarios = async (req, res) => {
         });
 
     } catch (error) {
-
-        if (error.codigo === 'FILTRO_INVALIDO') {
+        if (
+            error.codigo === 'FILTRO_INVALIDO' ||
+            error.codigo === 'CAMPO_BUSQUEDA_INVALIDO'
+        ) {
             return res.status(400).json({
                 ok: false,
                 mensaje: error.message
@@ -37,6 +47,10 @@ const listarUsuarios = async (req, res) => {
         });
     }
 };
+
+
+
+
 const contarUsuariosPorEstado = async (req, res) => {
     try {
         const totales = await contarUsuariosPorEstadoService();
@@ -55,6 +69,28 @@ const contarUsuariosPorEstado = async (req, res) => {
         });
     }
 };
+
+
+const listarTiendasActivas = async (req, res) => {
+    try {
+        const tiendas = await listarTiendasActivasService();
+
+        return res.status(200).json({
+            ok: true,
+            tiendas
+        });
+    } catch (error) {
+        console.error('Error al listar tiendas activas:', error);
+
+        return res.status(500).json({
+            ok: false,
+            mensaje: 'Error interno al listar tiendas activas'
+        });
+    }
+};
+
+
+
 
 const obtenerUsuario = async (req, res) => {
     try {
@@ -99,7 +135,8 @@ const crearUsuario = async (req, res) => {
             password,
             correo,
             rolCodigo,
-            proveedorId
+            proveedorId,
+            codTienda
         } = req.body;
 
         const usuario = await crearUsuarioService({
@@ -107,7 +144,8 @@ const crearUsuario = async (req, res) => {
             password,
             correo,
             rolCodigo,
-            proveedorId
+            proveedorId,
+            codTienda
         });
 
         return res.status(201).json({
@@ -121,6 +159,8 @@ const crearUsuario = async (req, res) => {
         if (
             error.codigo === 'DATOS_OBLIGATORIOS' ||
             error.codigo === 'PASSWORD_INVALIDO' ||
+            error.codigo === 'COD_TIENDA_OBLIGATORIO' ||
+            error.codigo === 'COD_TIENDA_INVALIDO' ||
             error.codigo === 'ROL_INVALIDO' ||
             error.codigo === 'PROVEEDOR_OBLIGATORIO' ||
             error.codigo === 'PROVEEDOR_NO_PERMITIDO'
@@ -222,6 +262,7 @@ const actualizarUsuario = async (req, res) => {
     correo,
     rolCodigo,
     proveedorId,
+    codTienda,
     primerIngreso,
     password,
     estado
@@ -233,6 +274,7 @@ const actualizarUsuario = async (req, res) => {
     correo,
     rolCodigo,
     proveedorId,
+    codTienda,
     primerIngreso,
     password,
     estado
@@ -250,6 +292,8 @@ const actualizarUsuario = async (req, res) => {
             error.codigo === 'ID_INVALIDO' ||
             error.codigo === 'DATOS_OBLIGATORIOS' ||
             error.codigo === 'PASSWORD_INVALIDO' ||
+            error.codigo === 'COD_TIENDA_OBLIGATORIO' ||
+            error.codigo === 'COD_TIENDA_INVALIDO' ||
             error.codigo === 'ROL_INVALIDO' ||
             error.codigo === 'PROVEEDOR_OBLIGATORIO' ||
             error.codigo === 'PROVEEDOR_NO_PERMITIDO'||
@@ -295,7 +339,8 @@ const aprobarUsuario = async (req, res) => {
         const {
             rolCodigo,
             proveedorId,
-            rol_id
+            rol_id,
+            codTienda
         } = req.body;
 
         const usuario = await aprobarUsuarioService({
@@ -309,7 +354,8 @@ const aprobarUsuario = async (req, res) => {
                             ? 'PROVEEDOR'
                             : null
             ),
-            proveedorId
+            proveedorId,
+            codTienda
         });
 
         return res.status(200).json({
@@ -324,21 +370,23 @@ const aprobarUsuario = async (req, res) => {
             error.codigo === 'ID_INVALIDO' ||
             error.codigo === 'ROL_OBLIGATORIO' ||
             error.codigo === 'ROL_INVALIDO' ||
+            error.codigo === 'COD_TIENDA_OBLIGATORIO' ||
+            error.codigo === 'COD_TIENDA_INVALIDO' ||
             error.codigo === 'PROVEEDOR_OBLIGATORIO' ||
             error.codigo === 'PROVEEDOR_NO_PERMITIDO'
-        ) {
+                ) {
             return res.status(400).json({
                 ok: false,
                 mensaje: error.message
             });
         }
 
-        if (
-            error.codigo === 'USUARIO_NO_ENCONTRADO' ||
-            error.codigo === 'USUARIO_NO_PENDIENTE' ||
-            error.codigo === 'ROL_NO_ENCONTRADO' ||
-            error.codigo === 'PROVEEDOR_NO_ENCONTRADO'
-        ) {
+       if (
+    error.codigo === 'USUARIO_NO_ENCONTRADO' ||
+    error.codigo === 'USUARIO_NO_PENDIENTE' ||
+    error.codigo === 'ROL_NO_ENCONTRADO' ||
+    error.codigo === 'PROVEEDOR_NO_ENCONTRADO'
+) {
             return res.status(404).json({
                 ok: false,
                 mensaje: error.message
@@ -405,5 +453,6 @@ module.exports = {
     actualizarUsuario,
     aprobarUsuario,
     rechazarUsuario,
-    contarUsuariosPorEstado
+    contarUsuariosPorEstado,
+    listarTiendasActivas
 };

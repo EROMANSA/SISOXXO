@@ -8,7 +8,8 @@ const {
     actualizarUsuario,
     aprobarUsuario,
     rechazarUsuario,
-    contarUsuariosPorEstado
+    contarUsuariosPorEstado,
+    listarTiendasActivas
 } = require('../controllers/usuarios.controller');
 
 const autenticarToken = require('../middlewares/auth.middleware');
@@ -33,6 +34,13 @@ router.get(
     autenticarToken,
     autorizarRoles('ADMIN'),
     contarUsuariosPorEstado
+);
+
+router.get(
+    '/tiendas',
+    autenticarToken,
+    autorizarRoles('ADMIN'),
+    listarTiendasActivas
 );
 
 router.get(

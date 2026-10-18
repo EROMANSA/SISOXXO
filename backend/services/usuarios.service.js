@@ -3,7 +3,9 @@ const bcrypt = require('bcryptjs');
 const {
     listarUsuarios,
     obtenerUsuarioPorId,
-    obtenerRolPorCodigo,    
+    obtenerRolPorCodigo,
+    obtenerTiendaPorId,
+    listarTiendasActivas,    
     crearUsuario,
     registrarUsuario,
     obtenerUsuarioParaEdicion,
@@ -14,9 +16,43 @@ const {
 } = require('../repositories/usuarios.repository');
 
 
+const resolverCodTiendaPorRol = async (rolCodigo, codTienda) => {
+    if (rolCodigo !== 'CONSULTOR') {
+        return null;
+    }
 
-const listarUsuariosService = async (filtro = 'TODOS') => {
+    const tiendaId = codTienda == null
+        ? ''
+        : String(codTienda).trim();
 
+    if (!tiendaId) {
+        const error = new Error(
+            'Debe asignar una tienda al usuario CONSULTOR.'
+        );
+        error.codigo = 'COD_TIENDA_OBLIGATORIO';
+        throw error;
+    }
+
+    const tienda = await obtenerTiendaPorId(tiendaId);
+
+    if (!tienda) {
+        const error = new Error(
+            'La tienda indicada no existe o está inactiva.'
+        );
+        error.codigo = 'COD_TIENDA_INVALIDO';
+        throw error;
+    }
+
+    return tienda.tienda_id;
+};
+
+
+
+const listarUsuariosService = async (
+    filtro = 'TODOS',
+    campo = '',
+    busqueda = ''
+) => {
     const filtrosPermitidos = [
         'TODOS',
         'ACTIVOS',
@@ -25,7 +61,9 @@ const listarUsuariosService = async (filtro = 'TODOS') => {
         'INACTIVOS'
     ];
 
-    const filtroNormalizado = filtro.toUpperCase();
+    const filtroNormalizado = String(filtro || 'TODOS')
+        .trim()
+        .toUpperCase();
 
     if (!filtrosPermitidos.includes(filtroNormalizado)) {
         const error = new Error('Filtro de usuarios no válido');
@@ -33,12 +71,45 @@ const listarUsuariosService = async (filtro = 'TODOS') => {
         throw error;
     }
 
-    return await listarUsuarios(filtroNormalizado);
+    const camposPermitidos = [
+        '',
+        'usuario',
+        'correo',
+        'rol',
+        'tienda',
+        'proveedor',
+        'estado'
+    ];
+
+    const campoNormalizado = String(campo || '')
+        .trim()
+        .toLowerCase();
+
+    if (!camposPermitidos.includes(campoNormalizado)) {
+        const error = new Error('Campo de búsqueda no válido');
+        error.codigo = 'CAMPO_BUSQUEDA_INVALIDO';
+        throw error;
+    }
+
+    return await listarUsuarios(
+        filtroNormalizado,
+        campoNormalizado,
+        String(busqueda || '').trim()
+    );
 };
+
+
+
 
 const contarUsuariosPorEstadoService = async () => {
     return await contarUsuariosPorEstado();
 };
+
+
+const listarTiendasActivasService = async () => {
+    return await listarTiendasActivas();
+};
+
 
 const obtenerUsuarioService = async (usuarioId) => {
 
@@ -66,7 +137,8 @@ const crearUsuarioService = async ({
     password,
     correo,
     rolCodigo,
-    proveedorId
+    proveedorId,
+    codTienda
 }) => {
 
     if (!username || !password || !rolCodigo) {
@@ -114,6 +186,13 @@ const crearUsuarioService = async ({
         throw error;
     }
 
+    const codTiendaValidado = await resolverCodTiendaPorRol(
+    rolNormalizado,
+    codTienda
+);
+
+
+
     let proveedor = null;    
 
 if (
@@ -138,7 +217,8 @@ if (
             passwordHash,
             correo: correo ? correo.trim() : null,
             rolId: rol.rol_id,
-            proveedorId: proveedor ? proveedor.proveedor_id : null
+            proveedorId: proveedor ? proveedor.proveedor_id : null,
+            codTienda: codTiendaValidado
         });
 
         return await obtenerUsuarioPorId(resultado.usuario_id);
@@ -241,7 +321,8 @@ const actualizarUsuarioService = async ({
     usuarioId,
     username,
     correo,
-    rolCodigo,    
+    rolCodigo,
+    codTienda,    
     primerIngreso,
     password,
     estado
@@ -309,6 +390,16 @@ if (!estadosPermitidos.includes(estadoNormalizado)) {
         throw error;
     }
 
+    const codTiendaSolicitado =
+    codTienda === undefined
+        ? usuarioActual.cod_tienda
+        : codTienda;
+
+const codTiendaValidado = await resolverCodTiendaPorRol(
+    rolNormalizado,
+    codTiendaSolicitado
+);
+
     
     if (password !== undefined && password !== null && password !== '') {
 
@@ -339,6 +430,7 @@ if (!estadosPermitidos.includes(estadoNormalizado)) {
         ? usuarioActual.proveedor_id
         : null,
             primerIngreso: primerIngreso || 'S',
+            codTienda: codTiendaValidado,
             passwordHash,
             estado: estadoNormalizado
         });
@@ -367,7 +459,8 @@ if (!estadosPermitidos.includes(estadoNormalizado)) {
 
 const aprobarUsuarioService = async ({
     usuarioId,
-    rolCodigo
+    rolCodigo,
+    codTienda
 }) => {
 
     const id = Number(usuarioId);
@@ -433,6 +526,14 @@ const aprobarUsuarioService = async ({
         throw error;
     }
 
+    const codTiendaValidado = await resolverCodTiendaPorRol(
+    rolNormalizado,
+    codTienda
+);    
+
+
+
+
     /*
      * IMPORTANTE:
      * La aprobación NO asocia un proveedor.
@@ -446,7 +547,8 @@ const aprobarUsuarioService = async ({
 
     const resultado = await aprobarUsuario({
         usuarioId: id,
-        rolId: rol.rol_id
+        rolId: rol.rol_id,
+        codTienda: codTiendaValidado
     });
 
     if (!resultado) {
@@ -511,5 +613,6 @@ module.exports = {
     actualizarUsuarioService,
     aprobarUsuarioService,
     rechazarUsuarioService,
-    contarUsuariosPorEstadoService
+    contarUsuariosPorEstadoService,
+    listarTiendasActivasService
 };

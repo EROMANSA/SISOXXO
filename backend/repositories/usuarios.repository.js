@@ -1,40 +1,99 @@
 const pool = require('../config/database');
 
-const listarUsuarios = async (filtro = 'TODOS') => {
-    let whereClause = '';
 
-    switch (filtro.toUpperCase()) {
+const listarUsuarios = async (
+    filtro = 'TODOS',
+    campo = '',
+    busqueda = ''
+) => {
+    const filtrosPermitidos = [
+        'TODOS',
+        'ACTIVOS',
+        'PENDIENTES',
+        'RECHAZADOS',
+        'INACTIVOS'
+    ];
+
+    const camposPermitidos = {
+        usuario: 'u.username',
+        correo: 'u.correo',
+        rol: 'r.nombre',
+        tienda: `CONCAT(
+            COALESCE(u.cod_tienda, ''),
+            ' ',
+            COALESCE(t.descripcion, '')
+        )`,
+        proveedor: 'p.razon_social',
+        estado: `CASE
+            WHEN u.estado_usuario = 'P' THEN 'PENDIENTE'
+            WHEN u.estado_usuario = 'R' THEN 'RECHAZADO'
+            WHEN u.estado = 'I' THEN 'INACTIVO'
+            WHEN u.estado_usuario = 'A' AND u.estado = 'A' THEN 'ACTIVO'
+            ELSE ''
+        END`
+    };
+
+    const filtroNormalizado = String(filtro || 'TODOS')
+        .trim()
+        .toUpperCase();
+
+    if (!filtrosPermitidos.includes(filtroNormalizado)) {
+        const error = new Error('Filtro de usuarios no válido');
+        error.codigo = 'FILTRO_INVALIDO';
+        throw error;
+    }
+
+    const campoNormalizado = String(campo || '').trim().toLowerCase();
+    const busquedaNormalizada = String(busqueda || '').trim();
+
+    if (
+        campoNormalizado &&
+        !Object.prototype.hasOwnProperty.call(
+            camposPermitidos,
+            campoNormalizado
+        )
+    ) {
+        const error = new Error('Campo de búsqueda no válido');
+        error.codigo = 'CAMPO_BUSQUEDA_INVALIDO';
+        throw error;
+    }
+
+    const condiciones = [];
+    const valores = [];
+
+    switch (filtroNormalizado) {
         case 'ACTIVOS':
-            whereClause = `
-                WHERE u.estado = 'A'
-                  AND u.estado_usuario = 'A'
-            `;
+            condiciones.push(
+                "u.estado = 'A' AND u.estado_usuario = 'A'"
+            );
             break;
 
         case 'PENDIENTES':
-            whereClause = `
-                WHERE u.estado_usuario = 'P'
-            `;
+            condiciones.push("u.estado_usuario = 'P'");
             break;
 
         case 'RECHAZADOS':
-            whereClause = `
-                WHERE u.estado_usuario = 'R'
-            `;
+            condiciones.push("u.estado_usuario = 'R'");
             break;
 
         case 'INACTIVOS':
-    whereClause = `
-        WHERE u.estado_usuario = 'A'
-          AND u.estado = 'I'
-    `;
-    break;
-
-        case 'TODOS':
-        default:
-            whereClause = '';
+            condiciones.push(
+                "u.estado_usuario = 'A' AND u.estado = 'I'"
+            );
             break;
     }
+
+    if (campoNormalizado && busquedaNormalizada) {
+        valores.push(`%${busquedaNormalizada}%`);
+
+        condiciones.push(
+            `${camposPermitidos[campoNormalizado]} ILIKE $${valores.length}`
+        );
+    }
+
+    const whereClause = condiciones.length
+        ? `WHERE ${condiciones.join(' AND ')}`
+        : '';
 
     const query = `
         SELECT
@@ -42,6 +101,8 @@ const listarUsuarios = async (filtro = 'TODOS') => {
             u.username,
             u.correo,
             u.rol_id,
+            u.cod_tienda,
+            t.descripcion AS tienda_descripcion,
             r.codigo AS rol_codigo,
             r.nombre AS rol_nombre,
             u.proveedor_id,
@@ -57,6 +118,8 @@ const listarUsuarios = async (filtro = 'TODOS') => {
             ON r.rol_id = u.rol_id
         LEFT JOIN sisoxxo."MAE_PROVEEDOR" p
             ON p.proveedor_id = u.proveedor_id
+        LEFT JOIN sisoxxo."MAE_TIENDA" t
+            ON t.tienda_id = u.cod_tienda
         ${whereClause}
         ORDER BY
             CASE u.estado_usuario
@@ -68,10 +131,11 @@ const listarUsuarios = async (filtro = 'TODOS') => {
             u.usuario_id;
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, valores);
 
     return result.rows;
 };
+
 
 const contarUsuariosPorEstado = async () => {
     const query = `
@@ -105,29 +169,32 @@ const contarUsuariosPorEstado = async () => {
 };
 
 const obtenerUsuarioPorId = async (usuarioId) => {
-    const query = `
-        SELECT
-            u.usuario_id,
-            u.username,
-            u.correo,
-            u.rol_id,
-            r.codigo AS rol_codigo,
-            r.nombre AS rol_nombre,
-            u.proveedor_id,
-            p.razon_social AS proveedor_nombre,
-            u.primer_ingreso,
-            u.estado,
-            u.estado_usuario,
-            u.ultimo_acceso,
-            u.create_date,
-            u.update_date
-        FROM sisoxxo."SEG_USUARIO" u
-        INNER JOIN sisoxxo."SEG_ROL" r
-            ON r.rol_id = u.rol_id
-        LEFT JOIN sisoxxo."MAE_PROVEEDOR" p
-            ON p.proveedor_id = u.proveedor_id
-        WHERE u.usuario_id = $1
-    `;
+    
+const query = `
+    SELECT
+        u.usuario_id,
+        u.username,
+        u.correo,
+        u.rol_id,
+        u.cod_tienda,
+        r.codigo AS rol_codigo,
+        r.nombre AS rol_nombre,
+        u.proveedor_id,
+        p.razon_social AS proveedor_nombre,
+        u.primer_ingreso,
+        u.estado,
+        u.estado_usuario,
+        u.ultimo_acceso,
+        u.create_date,
+        u.update_date
+    FROM sisoxxo."SEG_USUARIO" u
+    INNER JOIN sisoxxo."SEG_ROL" r
+        ON r.rol_id = u.rol_id
+    LEFT JOIN sisoxxo."MAE_PROVEEDOR" p
+        ON p.proveedor_id = u.proveedor_id
+    WHERE u.usuario_id = $1
+`;
+
 
     const result = await pool.query(query, [usuarioId]);
 
@@ -167,12 +234,14 @@ const existeProveedor = async (proveedorId) => {
     return result.rows[0] || null;
 };
 
+
 const crearUsuario = async ({
     username,
     passwordHash,
     correo,
     rolId,
-    proveedorId
+    proveedorId,
+    codTienda
 }) => {
     const query = `
         INSERT INTO sisoxxo."SEG_USUARIO"
@@ -182,6 +251,7 @@ const crearUsuario = async ({
             correo,
             rol_id,
             proveedor_id,
+            cod_tienda,
             primer_ingreso,
             estado,
             estado_usuario
@@ -193,6 +263,7 @@ const crearUsuario = async ({
             $3,
             $4,
             $5,
+            $6,
             'S',
             'A',
             'A'
@@ -205,11 +276,14 @@ const crearUsuario = async ({
         passwordHash,
         correo || null,
         rolId,
-        proveedorId || null
+        proveedorId || null,
+        codTienda || null
     ]);
 
     return result.rows[0];
 };
+
+
 
 const registrarUsuario = async ({
     username,
@@ -254,24 +328,26 @@ const registrarUsuario = async ({
     return result.rows[0];
 };
 
+
 const actualizarUsuario = async ({
     usuarioId,
     username,
     correo,
     rolId,
     proveedorId,
+    codTienda,
     primerIngreso,
     passwordHash,
     estado
 }) => {
-
     const campos = [
         'username = $1',
         'correo = $2',
         'rol_id = $3',
         'proveedor_id = $4',
-        'primer_ingreso = $5',
-        'estado = $6',
+        'cod_tienda = $5',
+        'primer_ingreso = $6',
+        'estado = $7',
         'update_date = CURRENT_TIMESTAMP'
     ];
 
@@ -280,6 +356,7 @@ const actualizarUsuario = async ({
         correo || null,
         rolId,
         proveedorId || null,
+        codTienda || null,
         primerIngreso || 'S',
         estado
     ];
@@ -304,6 +381,7 @@ const actualizarUsuario = async ({
     return result.rows[0] || null;
 };
 
+
 const obtenerUsuarioParaEdicion = async (usuarioId) => {
 
     const query = `
@@ -312,6 +390,7 @@ const obtenerUsuarioParaEdicion = async (usuarioId) => {
             u.username,
             u.correo,
             u.rol_id,
+            u.cod_tienda,
             r.codigo AS rol_codigo,
             u.proveedor_id,
             u.primer_ingreso,
@@ -327,32 +406,38 @@ const obtenerUsuarioParaEdicion = async (usuarioId) => {
 
     return result.rows[0] || null;
 };
+
+
 const aprobarUsuario = async ({
     usuarioId,
-    rolId
+    rolId,
+    codTienda
 }) => {
-
     const query = `
         UPDATE sisoxxo."SEG_USUARIO"
         SET
             rol_id = $1,
             proveedor_id = NULL,
+            cod_tienda = $2,
             estado = 'A',
             estado_usuario = 'A',
             primer_ingreso = 'S',
             update_date = CURRENT_TIMESTAMP
-        WHERE usuario_id = $2
+        WHERE usuario_id = $3
           AND estado_usuario IN ('P', 'R')
         RETURNING usuario_id
     `;
 
     const result = await pool.query(query, [
         rolId,
+        codTienda || null,
         usuarioId
     ]);
 
     return result.rows[0] || null;
 };
+
+
 
 
 const rechazarUsuario = async (usuarioId) => {
@@ -372,10 +457,47 @@ const rechazarUsuario = async (usuarioId) => {
     return result.rows[0] || null;
 };
 
+
+const obtenerTiendaPorId = async (tiendaId) => {
+    const query = `
+        SELECT
+            tienda_id,
+            descripcion
+        FROM sisoxxo."MAE_TIENDA"
+        WHERE tienda_id = $1
+          AND status = 'A'
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [tiendaId]);
+
+    return result.rows[0] || null;
+};
+
+
+const listarTiendasActivas = async () => {
+    const query = `
+        SELECT
+            tienda_id,
+            descripcion
+        FROM sisoxxo."MAE_TIENDA"
+        WHERE status = 'A'
+        ORDER BY tienda_id
+    `;
+
+    const result = await pool.query(query);
+
+    return result.rows;
+};
+
+
+
 module.exports = {
     listarUsuarios,
     obtenerUsuarioPorId,
     obtenerRolPorCodigo,
+    obtenerTiendaPorId,
+    listarTiendasActivas,
     existeProveedor,
     crearUsuario,
     registrarUsuario,
