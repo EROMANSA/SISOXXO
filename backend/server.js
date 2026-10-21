@@ -10,7 +10,7 @@ const authRoutes = require('./routes/auth.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
 const despachosRoutes = require('./routes/despachos.routes');
 const tiendasRoutes = require('./routes/tiendas.routes');
-
+const dashboardProveedorRoutes = require('./routes/dashboardProveedor.routes');
 
 const app = express();
 
@@ -23,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/despachos', despachosRoutes);
 app.use('/api/tiendas', tiendasRoutes);
+app.use('/api/dashboard-proveedor', dashboardProveedorRoutes);
 
 
 
