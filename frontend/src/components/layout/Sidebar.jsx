@@ -186,29 +186,35 @@ function Sidebar() {
                 )}
 
 
-                {/* ================================================= */}
-                {/* PROVEEDOR                                         */}
-                {/* ================================================= */}
+                
+{/* ===================================================== */}
+{/* PROVEEDOR                                             */}
+{/* ===================================================== */}
 
-                {esProveedor && (
-                    <>
-                       <NavLink
-    to="/mi-ficha"
-    style={linkStyle}
->
-    <Building2 size={18} />
-    Mi Ficha
-</NavLink>
+{esProveedor && (
+    <NavLink
+        to="/mi-ficha"
+        style={linkStyle}
+    >
+        <Building2 size={18} />
+        Mi Ficha
+    </NavLink>
+)}
 
-                        <NavLink
-                            to="/despachos"
-                            style={linkStyle}
-                        >
-                            <Truck size={18} />
-                            Registrar Despachos
-                        </NavLink>
-                    </>
-                )}
+{/* ===================================================== */}
+{/* PROVEEDOR + CONSULTOR                                 */}
+{/* ===================================================== */}
+
+{(esProveedor || esConsultor) && (
+    <NavLink
+        to="/despachos"
+        style={linkStyle}
+    >
+        <Truck size={18} />
+        {esConsultor ? 'Consultar Despachos' : 'Registrar Despachos'}
+    </NavLink>
+)}
+
 
 
                 {/* ================================================= */}
