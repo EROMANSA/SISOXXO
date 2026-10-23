@@ -10,85 +10,139 @@ const {
 // LISTAR DESPACHOS
 // ============================================================
 
-const listarDespachosService = async (proveedorId) => {
 
-    return await listarDespachos(proveedorId);
+const listarDespachosService = async (valorId, rol = 'PROVEEDOR') => {
 
+    if (
+        valorId === undefined ||
+        valorId === null ||
+        String(valorId).trim() === ''
+    ) {
+        const error = new Error(
+            'No se recibió el identificador del proveedor o tienda.'
+        );
+
+        error.codigo = 'IDENTIFICADOR_REQUERIDO';
+        throw error;
+    }
+
+    if (!['PROVEEDOR', 'CONSULTOR'].includes(rol)) {
+        const error = new Error('Rol no válido para consultar despachos.');
+
+        error.codigo = 'ROL_INVALIDO';
+        throw error;
+    }
+
+    if (
+        rol === 'PROVEEDOR' &&
+        (
+            !Number.isInteger(Number(valorId)) ||
+            Number(valorId) <= 0
+        )
+    ) {
+        const error = new Error('Identificador de proveedor no válido.');
+
+        error.codigo = 'ID_PROVEEDOR_INVALIDO';
+        throw error;
+    }
+
+    return await listarDespachos(
+        rol === 'PROVEEDOR' ? Number(valorId) : String(valorId).trim(),
+        rol
+    );
 };
+
 
 
 // ============================================================
 // OBTENER DESPACHO POR ID
 // ============================================================
 
+
 const obtenerDespachoPorIdService = async (
     transacId,
-    proveedorId
+    valorId,
+    rol = 'PROVEEDOR'
 ) => {
 
     const idTransaccion = Number(transacId);
-    const idProveedor = Number(proveedorId);
 
-
-    // ========================================================
-    // VALIDAR TRANSACCIÓN
-    // ========================================================
-
+    // Validar transacción
     if (
         !Number.isInteger(idTransaccion) ||
         idTransaccion <= 0
     ) {
-
         const error = new Error(
-            'Identificador de transacción no válido'
+            'Identificador de transacción no válido.'
         );
 
         error.codigo = 'ID_TRANSACCION_INVALIDO';
-
         throw error;
     }
 
-
-    // ========================================================
-    // VALIDAR PROVEEDOR
-    // ========================================================
-
-    if (
-        !Number.isInteger(idProveedor) ||
-        idProveedor <= 0
-    ) {
-
+    // Validar rol
+    if (!['PROVEEDOR', 'CONSULTOR'].includes(rol)) {
         const error = new Error(
-            'Identificador de proveedor no válido'
+            'Rol no válido para consultar despachos.'
         );
 
-        error.codigo = 'ID_PROVEEDOR_INVALIDO';
-
+        error.codigo = 'ROL_INVALIDO';
         throw error;
     }
 
+    // Validar identificador según el rol
+    if (
+        valorId === undefined ||
+        valorId === null ||
+        String(valorId).trim() === ''
+    ) {
+        const error = new Error(
+            'No se recibió el identificador del proveedor o tienda.'
+        );
 
+        error.codigo = 'IDENTIFICADOR_REQUERIDO';
+        throw error;
+    }
+
+    let identificador;
+
+    if (rol === 'PROVEEDOR') {
+        identificador = Number(valorId);
+
+        if (
+            !Number.isInteger(identificador) ||
+            identificador <= 0
+        ) {
+            const error = new Error(
+                'Identificador de proveedor no válido.'
+            );
+
+            error.codigo = 'ID_PROVEEDOR_INVALIDO';
+            throw error;
+        }
+    } else {
+        identificador = String(valorId).trim();
+    }
+
+    // Consultar despacho validando proveedor o tienda
     const despacho = await obtenerDespachoPorId(
         idTransaccion,
-        idProveedor
+        identificador,
+        rol
     );
 
-
     if (!despacho) {
-
         const error = new Error(
-            'Despacho no encontrado'
+            'Despacho no encontrado o no autorizado para su consulta.'
         );
 
         error.codigo = 'DESPACHO_NO_ENCONTRADO';
-
         throw error;
     }
 
-
     return despacho;
-
 };
+
 
 
 // ============================================================

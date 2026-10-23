@@ -5,7 +5,7 @@ const pool = require('../config/database');
 // LISTAR DESPACHOS
 // ============================================================
 
-const listarDespachos = async (proveedorId) => {
+const listarDespachos = async (valorId, rol = 'PROVEEDOR') => {
 
     const query = `
         SELECT
@@ -53,13 +53,17 @@ const listarDespachos = async (proveedorId) => {
             AND led.cod_grupo = '0000'
             AND led.codigo_valor = mt.estado_despacho
 
-        WHERE mt.proveedor_id = $1
+        WHERE (
+    ($2 = 'PROVEEDOR' AND mt.proveedor_id::varchar = $1::varchar)
+    OR
+    ($2 = 'CONSULTOR' AND mt.destino_id::varchar = $1::varchar)
+)
 
         ORDER BY
             mt.transac_id DESC
     `;
 
-    const result = await pool.query(query, [proveedorId]);
+    const result = await pool.query(query, [valorId, rol]);
 
     return result.rows;
 };
@@ -949,7 +953,11 @@ WHERE transac_id = $22
 // OBTENER DESPACHO POR ID
 // ============================================================
 
-const obtenerDespachoPorId = async (transacId, proveedorId) => {
+const obtenerDespachoPorId = async (
+    transacId,
+    valorId,
+    rol = 'PROVEEDOR'
+) => {
 
     // ============================================================
     // CABECERA DEL DESPACHO
@@ -1015,13 +1023,17 @@ const obtenerDespachoPorId = async (transacId, proveedorId) => {
             AND led.codigo_valor = mt.estado_despacho
 
         WHERE mt.transac_id = $1
-          AND mt.proveedor_id = $2
+  AND (
+      ($3 = 'PROVEEDOR' AND mt.proveedor_id::varchar = $2::varchar)
+      OR
+      ($3 = 'CONSULTOR' AND mt.destino_id::varchar = $2::varchar)
+  )
     `;
 
-    const resultCabecera = await pool.query(
-        queryCabecera,
-        [transacId, proveedorId]
-    );
+  const resultCabecera = await pool.query(
+    queryCabecera,
+    [transacId, valorId, rol]
+);
 
 
     if (resultCabecera.rows.length === 0) {

@@ -1,3 +1,4 @@
+
 const express = require('express');
 
 const {
@@ -7,50 +8,43 @@ const {
     actualizarDespacho
 } = require('../controllers/despachos.controller');
 
-/*
-const {
-    autenticarToken
-} = require('../middlewares/auth.middleware');
-
-
-const {
-    autorizarRoles
-} = require('../middlewares/role.middleware');
- */
 const autenticarToken = require('../middlewares/auth.middleware');
-
 const autorizarRoles = require('../middlewares/role.middleware');
 
 const router = express.Router();
 
 /**
- * Lista los despachos del proveedor asociado
- * al usuario autenticado.
+ * Lista los despachos asociados al usuario autenticado.
  *
  * Acceso:
- * PROVEEDOR
+ * PROVEEDOR, CONSULTOR
  */
 router.get(
     '/',
     autenticarToken,
-    autorizarRoles('PROVEEDOR'),
+    autorizarRoles('PROVEEDOR', 'CONSULTOR'),
     listarDespachos
 );
 
 /**
- * Obtiene un despacho específico del proveedor
- * autenticado, incluyendo su cabecera y detalle.
+ * Obtiene un despacho específico, incluyendo cabecera y detalle.
  *
  * Acceso:
- * PROVEEDOR
+ * PROVEEDOR, CONSULTOR
  */
 router.get(
     '/:id',
     autenticarToken,
-    autorizarRoles('PROVEEDOR'),
+    autorizarRoles('PROVEEDOR', 'CONSULTOR'),
     obtenerDespachoPorId
 );
 
+/**
+ * Crea un despacho.
+ *
+ * Acceso:
+ * PROVEEDOR
+ */
 router.post(
     '/',
     autenticarToken,
@@ -58,13 +52,12 @@ router.post(
     crearDespacho
 );
 
-router.post(
-    '/',
-    autenticarToken,
-    autorizarRoles('PROVEEDOR'),
-    crearDespacho
-);
-
+/**
+ * Actualiza un despacho.
+ *
+ * Acceso:
+ * PROVEEDOR
+ */
 router.put(
     '/:id',
     autenticarToken,

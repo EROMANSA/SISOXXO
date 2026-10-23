@@ -6,24 +6,84 @@ const {
 } = require('../services/despachos.service');
 
 
+const {
+    obtenerUsuarioPorId
+} = require('../repositories/auth.repository');
+
 // ============================================================
 // LISTAR DESPACHOS
 // ============================================================
 
+
 const listarDespachos = async (req, res) => {
-
     try {
+        const usuarioId = req.user?.usuario_id;
+        const rolToken = req.user?.rol_codigo;
 
-        const proveedorId = req.user?.proveedor_id;
-
-        if (!proveedorId) {
-            return res.status(400).json({
+        if (!usuarioId) {
+            return res.status(401).json({
                 ok: false,
-                mensaje: 'El usuario no tiene un proveedor asociado.'
+                mensaje: 'No se pudo identificar al usuario autenticado.'
             });
         }
 
-        const despachos = await listarDespachosService(proveedorId);
+        // Obtener los datos actuales del usuario desde la base de datos
+        const usuario = await obtenerUsuarioPorId(usuarioId);
+
+        if (!usuario) {
+            return res.status(401).json({
+                ok: false,
+                mensaje: 'El usuario autenticado no existe.'
+            });
+        }
+
+        // Verificar que el rol de la base de datos coincida con el token
+        if (usuario.rol_codigo !== rolToken) {
+            return res.status(403).json({
+                ok: false,
+                mensaje: 'El rol del usuario no coincide con el token.'
+            });
+        }
+
+        let valorId;
+
+        if (usuario.rol_codigo === 'PROVEEDOR') {
+            valorId = usuario.proveedor_id;
+
+            if (
+                valorId === null ||
+                valorId === undefined ||
+                String(valorId).trim() === ''
+            ) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El usuario no tiene un proveedor asociado.'
+                });
+            }
+        } else if (usuario.rol_codigo === 'CONSULTOR') {
+            valorId = usuario.cod_tienda;
+
+            if (
+                valorId === null ||
+                valorId === undefined ||
+                String(valorId).trim() === ''
+            ) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El usuario CONSULTOR no tiene una tienda asignada.'
+                });
+            }
+        } else {
+            return res.status(403).json({
+                ok: false,
+                mensaje: 'El rol no tiene acceso al listado de despachos.'
+            });
+        }
+
+        const despachos = await listarDespachosService(
+            valorId,
+            usuario.rol_codigo
+        );
 
         return res.status(200).json({
             ok: true,
@@ -31,7 +91,6 @@ const listarDespachos = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error('Error al listar despachos:', error);
 
         return res.status(500).json({
@@ -40,6 +99,7 @@ const listarDespachos = async (req, res) => {
         });
     }
 };
+
 
 
 // ============================================================
@@ -403,69 +463,105 @@ case 'FECHA_CANCELACION_INVALIDA':
 // OBTENER DESPACHO POR ID
 // ============================================================
 
+
 const obtenerDespachoPorId = async (req, res) => {
-
     try {
-
         const transacId = req.params.id;
-        const proveedorId = req.user?.proveedor_id;
+        const usuarioId = req.user?.usuario_id;
+        const rolToken = req.user?.rol_codigo;
 
-
-        if (!proveedorId) {
-
-            return res.status(400).json({
+        if (!usuarioId) {
+            return res.status(401).json({
                 ok: false,
-                mensaje: 'El usuario no tiene un proveedor asociado.'
+                mensaje: 'No se pudo identificar al usuario autenticado.'
             });
         }
 
+        // Recuperar los datos actuales del usuario
+        const usuario = await obtenerUsuarioPorId(usuarioId);
+
+        if (!usuario) {
+            return res.status(401).json({
+                ok: false,
+                mensaje: 'El usuario autenticado no existe.'
+            });
+        }
+
+        // Validar consistencia del rol
+        if (usuario.rol_codigo !== rolToken) {
+            return res.status(403).json({
+                ok: false,
+                mensaje: 'El rol del usuario no coincide con el token.'
+            });
+        }
+
+        let valorId;
+
+        if (usuario.rol_codigo === 'PROVEEDOR') {
+            valorId = usuario.proveedor_id;
+
+            if (
+                valorId === null ||
+                valorId === undefined ||
+                String(valorId).trim() === ''
+            ) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El usuario no tiene un proveedor asociado.'
+                });
+            }
+        } else if (usuario.rol_codigo === 'CONSULTOR') {
+            valorId = usuario.cod_tienda;
+
+            if (
+                valorId === null ||
+                valorId === undefined ||
+                String(valorId).trim() === ''
+            ) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El usuario CONSULTOR no tiene una tienda asignada.'
+                });
+            }
+        } else {
+            return res.status(403).json({
+                ok: false,
+                mensaje: 'El rol no tiene acceso a la consulta de despachos.'
+            });
+        }
 
         const despacho = await obtenerDespachoPorIdService(
             transacId,
-            proveedorId
+            valorId,
+            usuario.rol_codigo
         );
-
 
         return res.status(200).json({
             ok: true,
             despacho
         });
 
-
     } catch (error) {
+        console.error('Error al obtener despacho:', error);
 
-        console.error(
-            'Error al obtener despacho:',
-            error
-        );
-
-
-        if (error.codigo === 'ID_TRANSACCION_INVALIDO') {
-
+        if (
+            error.codigo === 'ID_TRANSACCION_INVALIDO' ||
+            error.codigo === 'ID_PROVEEDOR_INVALIDO' ||
+            error.codigo === 'IDENTIFICADOR_REQUERIDO' ||
+            error.codigo === 'ROL_INVALIDO'
+        ) {
             return res.status(400).json({
                 ok: false,
                 mensaje: error.message
             });
         }
-
-
-        if (error.codigo === 'ID_PROVEEDOR_INVALIDO') {
-
-            return res.status(400).json({
-                ok: false,
-                mensaje: error.message
-            });
-        }
-
 
         if (error.codigo === 'DESPACHO_NO_ENCONTRADO') {
-
             return res.status(404).json({
                 ok: false,
                 mensaje: error.message
             });
         }
-
 
         return res.status(500).json({
             ok: false,
@@ -473,6 +569,7 @@ const obtenerDespachoPorId = async (req, res) => {
         });
     }
 };
+
 
 
 // ============================================================

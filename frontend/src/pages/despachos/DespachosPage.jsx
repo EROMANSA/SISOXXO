@@ -1,7 +1,12 @@
 /*HOLA*/
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarDespachos } from '../../services/despachos.services';
+import * as XLSX from 'xlsx';
+
+import {
+    listarDespachos,
+    obtenerDespachoPorId
+} from '../../services/despachos.services';
 
 const estilos = {
     pageContainer: {
@@ -142,21 +147,7 @@ const estilos = {
     }
 };
 
-const usuarioGuardado = localStorage.getItem('usuario');
 
-let usuario = null;
-
-try {
-    usuario = usuarioGuardado
-        ? JSON.parse(usuarioGuardado)
-        : null;
-} catch {
-    usuario = null;
-}
-
-const rol = usuario?.rol_codigo || '';
-const mostrarColumnaProveedor =
-    rol === 'CONSULTOR' || rol === 'ADMIN';
 
 const obtenerValor = (registro, campos) => {
     for (const campo of campos) {
@@ -188,6 +179,25 @@ const formatearFecha = (fecha) => {
 const DespachosPage = () => {
 
     const navigate = useNavigate();
+
+    const usuarioGuardado = localStorage.getItem('usuario');
+
+    let usuario = null;
+
+    try {
+        usuario = usuarioGuardado
+            ? JSON.parse(usuarioGuardado)
+            : null;
+    } catch {
+        usuario = null;
+    }
+
+    const rol = usuario?.rol_codigo || '';
+
+    const esConsultor = rol === 'CONSULTOR';
+
+    const mostrarColumnaProveedor =
+        rol === 'CONSULTOR' || rol === 'ADMIN';
 
     const [despachos, setDespachos] = useState([]);
     const [cargando, setCargando] = useState(true);
@@ -293,6 +303,71 @@ const DespachosPage = () => {
 
     }, [despachos, campoBusqueda, criterioBusqueda]);
 
+
+const exportarExcel = async () => {
+    try {
+        if (despachosFiltrados.length === 0) {
+            alert('No existen despachos para exportar.');
+            return;
+        }
+
+        const cabeceras = [];
+        const detalles = [];
+
+        for (const despacho of despachosFiltrados) {
+            const respuesta = await obtenerDespachoPorId(
+                despacho.transac_id
+            );
+
+            const registro = respuesta?.despacho;
+
+            if (!registro?.cabecera) {
+                throw new Error(
+                    `No se pudo obtener el despacho ${despacho.transac_id}.`
+                );
+            }
+
+            cabeceras.push(registro.cabecera);
+
+            for (const detalle of registro.detalles || []) {
+                detalles.push(detalle);
+            }
+        }
+
+        const libro = XLSX.utils.book_new();
+
+        const hojaCabecera = XLSX.utils.json_to_sheet(cabeceras);
+        const hojaDetalle = XLSX.utils.json_to_sheet(detalles);
+
+        XLSX.utils.book_append_sheet(
+            libro,
+            hojaCabecera,
+            'Cabecera'
+        );
+
+        XLSX.utils.book_append_sheet(
+            libro,
+            hojaDetalle,
+            'Detalle'
+        );
+
+        const fecha = new Date().toISOString().slice(0, 10);
+
+        XLSX.writeFile(
+            libro,
+            `Despachos_${fecha}.xlsx`
+        );
+    } catch (error) {
+        console.error('Error al exportar despachos:', error);
+
+        alert(
+            'No fue posible exportar los despachos. ' +
+            'Verifique los datos y vuelva a intentarlo.'
+        );
+    }
+};
+
+
     return (
         <div style={estilos.pageContainer}>
 
@@ -368,23 +443,20 @@ const DespachosPage = () => {
 
                     <div style={estilos.bloqueAcciones}>
 
-                        <button
-    type="button"
-    style={estilos.botonNuevo}
-    onClick={() => {
-        navigate('/despachos/nuevo');
-    }}
->
-    + Nuevo Despacho
-</button>
+                        {!esConsultor && (
+    <button
+        type="button"
+        style={estilos.botonNuevo}
+        onClick={() => navigate('/despachos/nuevo')}
+    >
+        + Nuevo Despacho
+    </button>
+)}
 
                         <button
                             type="button"
                             style={estilos.botonExcel}
-                            onClick={() => {
-                                // Se implementará posteriormente
-                                // la exportación Excel.
-                            }}
+                            onClick={exportarExcel}
                         >
                             Exportar Excel
                         </button>
@@ -577,7 +649,7 @@ const DespachosPage = () => {
     Ver
 </button>
 
-        {despacho.estado_despacho === 'PRO' && (
+       {!esConsultor && despacho.estado_despacho === 'PRO' && (
     <button
         type="button"
         style={{

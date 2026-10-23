@@ -10,8 +10,9 @@ const obtenerUsuarioPorUsername = async (username) => {
             u.rol_id,
             r.codigo AS rol_codigo,
             r.nombre AS rol_nombre,
-            u.proveedor_id,
-            u.primer_ingreso,
+            u.proveedor_id,            
+            u.cod_tienda,
+            u.primer_ingreso,            
             u.estado,
             u.estado_usuario,
             u.ultimo_acceso,
@@ -51,7 +52,31 @@ const actualizarUltimoAcceso = async (usuarioId) => {
     return result.rows[0] || null;
 };
 
+
+const obtenerUsuarioPorId = async (usuarioId) => {
+    const query = `
+        SELECT
+            u.usuario_id,
+            u.username,
+            r.codigo AS rol_codigo,
+            u.proveedor_id,
+            u.cod_tienda
+        FROM sisoxxo."SEG_USUARIO" u
+        INNER JOIN sisoxxo."SEG_ROL" r
+            ON r.rol_id = u.rol_id
+        WHERE u.usuario_id = $1
+        LIMIT 1
+    `;
+
+    const result = await pool.query(query, [usuarioId]);
+
+    return result.rows[0] || null;
+};
+
+
+
 module.exports = {
     obtenerUsuarioPorUsername,
+    obtenerUsuarioPorId,
     actualizarUltimoAcceso
 };

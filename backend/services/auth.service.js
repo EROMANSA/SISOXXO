@@ -47,6 +47,7 @@ const autenticarUsuario = async (username, password) => {
     rol_codigo: usuario.rol_codigo,
     rol_nombre: usuario.rol_nombre,
     proveedor_id: usuario.proveedor_id,
+    cod_tienda: usuario.cod_tienda,
     razon_social: usuario.razon_social,
     primer_ingreso: usuario.primer_ingreso
 };
@@ -68,6 +69,7 @@ const autenticarUsuario = async (username, password) => {
     rol_codigo: usuario.rol_codigo,
     rol_nombre: usuario.rol_nombre,
     proveedor_id: usuario.proveedor_id,
+    cod_tienda: usuario.cod_tienda,
     razon_social: usuario.razon_social,
     primer_ingreso: usuario.primer_ingreso
 }

@@ -1,5 +1,6 @@
 
 import DashboardProveedorPage from './DashboardProveedorPage';
+import DashboardConsultorPage from './DashboardConsultorPage';
 
 function DashboardPage() {
     let usuario = null;
@@ -18,6 +19,10 @@ function DashboardPage() {
 
     if (rol === 'PROVEEDOR') {
         return <DashboardProveedorPage />;
+    }
+
+    if (rol === 'CONSULTOR') {
+        return <DashboardConsultorPage />;
     }
 
     return (
