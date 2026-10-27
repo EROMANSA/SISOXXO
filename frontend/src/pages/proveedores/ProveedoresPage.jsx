@@ -11,6 +11,20 @@ import ProveedoresForm from '../../components/proveedores/ProveedoresForm';
 
 function ProveedoresPage() {
 
+    const usuarioGuardado = localStorage.getItem('usuario');
+
+    let usuario = null;
+
+    try {
+        usuario = usuarioGuardado
+            ? JSON.parse(usuarioGuardado)
+            : null;
+    } catch {
+        usuario = null;
+    }
+
+    const esConsultor = usuario?.rol_codigo === 'CONSULTOR';
+
     const [proveedores, setProveedores] = useState([]);
 
     const [cargando, setCargando] = useState(true);
@@ -105,6 +119,8 @@ function ProveedoresPage() {
     ]);
 
    const handleNuevo = () => {
+    if (esConsultor) return;
+
     setProveedorSeleccionado(null);
     setModoFormulario('nuevo');
     setMostrarFormulario(true);
@@ -117,6 +133,8 @@ function ProveedoresPage() {
 };
 
     const handleEditar = (proveedor) => {
+    if (esConsultor) return;
+
     setProveedorSeleccionado(proveedor);
     setModoFormulario('editar');
     setMostrarFormulario(true);
@@ -205,6 +223,7 @@ return (
                     onCampoChange={setCampoBusqueda}
                     onCriterioChange={setCriterioBusqueda}
                     onNuevo={handleNuevo}
+                    mostrarNuevo={!esConsultor}
                     onExportar={handleExportar}
                 />
 
@@ -225,6 +244,7 @@ return (
                         proveedores={proveedoresFiltrados}
                         onVer={handleVer}
                         onEditar={handleEditar}
+                        mostrarEditar={!esConsultor}
                     />
                 )}
             </>

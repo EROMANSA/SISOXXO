@@ -6,7 +6,8 @@ import {
 function ProveedoresTable({
     proveedores,
     onVer,
-    onEditar
+    onEditar,
+    mostrarEditar = true
 }) {
 
     const obtenerEstadoProveedor = (status) => {
@@ -137,17 +138,19 @@ function ProveedoresTable({
                                             Ver
                                         </button>
 
-                                        <button
-                                            type="button"
-                                            className="btn-row btn-edit"
-                                            onClick={() =>
-                                                onEditar(proveedor)
-                                            }
-                                            title="Editar proveedor"
-                                        >
-                                            <Pencil size={15} />
-                                            Editar
-                                        </button>
+                                        {mostrarEditar && (
+                                            <button
+                                                type="button"
+                                                className="btn-row btn-edit"
+                                                onClick={() =>
+                                                    onEditar(proveedor)
+                                                }
+                                                title="Editar proveedor"
+                                            >
+                                                <Pencil size={15} />
+                                                Editar
+                                            </button>
+                                        )}
 
                                     </div>
 

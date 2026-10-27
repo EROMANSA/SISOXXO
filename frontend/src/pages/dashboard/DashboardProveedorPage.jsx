@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
     listarTiendasDashboard,
@@ -188,6 +189,19 @@ valorAlerta: {
 };
 
 const DashboardProveedorPage = () => {
+
+    const navigate = useNavigate();
+
+    const irAListaDespachos = (filtro) => {
+    navigate('/despachos', {
+        state: {
+            filtroDashboard: filtro,
+            estadoDespacho,
+            tiendaId
+        }
+    });
+};
+
     const [tiendas, setTiendas] = useState([]);
     const [estados, setEstados] = useState([]);
 
@@ -441,9 +455,23 @@ setIndicadores({
                         </div>
 
                         {/* TARJETA: ENTREGAS */}
-                        <div style={estilos.tarjeta}>
-
-                            <div style={estilos.tarjetaTitulo}>
+                        <div onClick={() => {
+    if (
+        !cargandoIndicadores &&
+        indicadores.entregas_registradas > 0
+    ) {
+        irAListaDespachos('ENTREGAS_REGISTRADAS');
+    }
+}}
+style={{
+    ...estilos.tarjeta,
+    cursor:
+        !cargandoIndicadores &&
+        indicadores.entregas_registradas > 0
+            ? 'pointer'
+            : 'default'
+}}>
+                                <div style={estilos.tarjetaTitulo}>
                                 Entregas Registradas
                             </div>
                             <div style={estilos.tarjetaValor}>
@@ -480,7 +508,22 @@ setIndicadores({
                         </div>
 
                         {/* TARJETA: ALERTAS PENDIENTES */}
-                        <div style={estilos.tarjetaAlerta}>
+                        <div onClick={() => {
+    if (
+        !cargandoIndicadores &&
+        indicadores.alertas_pendientes > 0
+    ) {
+        irAListaDespachos('ALERTAS_PENDIENTES');
+    }
+}}
+style={{
+    ...estilos.tarjetaAlerta,
+    cursor:
+        !cargandoIndicadores &&
+        indicadores.alertas_pendientes > 0
+            ? 'pointer'
+            : 'default'
+}}>
 
                             <div style={estilos.tarjetaAlertaTitulo}>
                                 Alertas Pendientes
@@ -526,10 +569,23 @@ setIndicadores({
 
                             {/* PROCEDENCIA / LOTE FALTANTE */}
                             <div
-                                style={{
-                                    ...estilos.filaAlerta,
-                                    ...estilos.alertaLote
-                                }}>
+                                onClick={() => {
+    if (
+        !cargandoIndicadores &&
+        indicadores.entregas_lote_faltante > 0
+    ) {
+        irAListaDespachos('LOTE_FALTANTE');
+    }
+}}
+style={{
+    ...estilos.filaAlerta,
+    ...estilos.alertaLote,
+    cursor:
+        !cargandoIndicadores &&
+        indicadores.entregas_lote_faltante > 0
+            ? 'pointer'
+            : 'default'
+}}>
                                 <div style={estilos.textoAlerta}>
                                     Entrega: procedencia/lote faltante
                                 </div>
@@ -545,11 +601,24 @@ setIndicadores({
 
                             {/* TEMPERATURA POR REVISAR */}
                             <div
-                                style={{
-                                    ...estilos.filaAlerta,
-                                    ...estilos.alertaTemperatura,
-                                    marginBottom: 0
-                                }}>
+                                onClick={() => {
+    if (
+        !cargandoIndicadores &&
+        indicadores.entregas_temperatura_pendiente > 0
+    ) {
+        irAListaDespachos('TEMPERATURA_PENDIENTE');
+    }
+}}
+style={{
+    ...estilos.filaAlerta,
+    ...estilos.alertaTemperatura,
+    marginBottom: 0,
+    cursor:
+        !cargandoIndicadores &&
+        indicadores.entregas_temperatura_pendiente > 0
+            ? 'pointer'
+            : 'default'
+}}>
                                 <div style={estilos.textoAlerta}>
                                     Entrega: temperatura por revisar
                                 </div>

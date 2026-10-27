@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
     obtenerTiendaConsultor,
@@ -228,6 +229,19 @@ const indicadoresIniciales = {
 };
 
 const DashboardConsultorPage = () => {
+    const navigate = useNavigate();
+
+    const irAListaDespachos = (filtro) => {
+        navigate('/despachos', {
+            state: {
+                filtroDashboard: filtro,
+                tiendaId: tienda?.tienda_id ?? '',
+                tipoRubro,
+                proveedorId,
+                estadoDespacho
+            }
+        });
+    };
     const [tienda, setTienda] = useState(null);
     const [rubros, setRubros] = useState([]);
     const [proveedores, setProveedores] = useState([]);
@@ -393,17 +407,45 @@ const DashboardConsultorPage = () => {
         }).format(valor);
 
  
-const tarjetaIndicador = (titulo, valor, unidad, sufijo = '') => (
-    <div style={estilos.tarjeta}>
-        <div style={estilos.tituloTarjeta}>{titulo}</div>
-        <div style={estilos.valor}>
-            {cargandoIndicadores
-                ? '...'
-                : `${formatearNumero(valor)}${sufijo}`}
+const tarjetaIndicador = (
+    titulo,
+    valor,
+    unidad,
+    sufijo = '',
+    filtro = ''
+) => {
+    const habilitada = Boolean(
+        filtro && !cargandoIndicadores && Number(valor) > 0
+    );
+
+    return (
+        <div
+            onClick={() => {
+                if (habilitada) irAListaDespachos(filtro);
+            }}
+            role={habilitada ? 'button' : undefined}
+            tabIndex={habilitada ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (habilitada && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    irAListaDespachos(filtro);
+                }
+            }}
+            style={{
+                ...estilos.tarjeta,
+                cursor: habilitada ? 'pointer' : 'default'
+            }}
+        >
+            <div style={estilos.tituloTarjeta}>{titulo}</div>
+            <div style={estilos.valor}>
+                {cargandoIndicadores
+                    ? '...'
+                    : `${formatearNumero(valor)}${sufijo}`}
+            </div>
+            <div style={estilos.unidad}>{unidad}</div>
         </div>
-        <div style={estilos.unidad}>{unidad}</div>
-    </div>
-);
+    );
+};
 
 
     return (
@@ -521,7 +563,9 @@ const tarjetaIndicador = (titulo, valor, unidad, sufijo = '') => (
                         {tarjetaIndicador(
                             'Entregas Registradas',
                             indicadores.entregas_registradas,
-                            'Cantidad de despachos'
+                            'Cantidad de despachos',
+                            '',
+                            'ENTREGAS_REGISTRADAS'
                         )}
 
                         {tarjetaIndicador(
@@ -531,7 +575,28 @@ const tarjetaIndicador = (titulo, valor, unidad, sufijo = '') => (
     ' %'
 )}
 
-                        <div style={estilos.tarjetaAlerta}>
+                        <div
+                            onClick={() => {
+                                if (!cargandoIndicadores && indicadores.alertas_pendientes > 0) {
+                                    irAListaDespachos('ALERTAS_PENDIENTES');
+                                }
+                            }}
+                            role={!cargandoIndicadores && indicadores.alertas_pendientes > 0 ? 'button' : undefined}
+                            tabIndex={!cargandoIndicadores && indicadores.alertas_pendientes > 0 ? 0 : undefined}
+                            onKeyDown={(e) => {
+                                if (!cargandoIndicadores && indicadores.alertas_pendientes > 0 &&
+                                    (e.key === 'Enter' || e.key === ' ')) {
+                                    e.preventDefault();
+                                    irAListaDespachos('ALERTAS_PENDIENTES');
+                                }
+                            }}
+                            style={{
+                                ...estilos.tarjetaAlerta,
+                                cursor: !cargandoIndicadores && indicadores.alertas_pendientes > 0
+                                    ? 'pointer'
+                                    : 'default'
+                            }}
+                        >
                             <div style={estilos.tituloAlerta}>
                                 Alertas Pendientes
                             </div>
@@ -580,9 +645,26 @@ const tarjetaIndicador = (titulo, valor, unidad, sufijo = '') => (
                             </div>
 
                             <div
+                                onClick={() => {
+                                    if (!cargandoIndicadores && indicadores.entregas_lote_faltante > 0) {
+                                        irAListaDespachos('LOTE_FALTANTE');
+                                    }
+                                }}
+                                role={!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 ? 'button' : undefined}
+                                tabIndex={!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 ? 0 : undefined}
+                                onKeyDown={(e) => {
+                                    if (!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 &&
+                                        (e.key === 'Enter' || e.key === ' ')) {
+                                        e.preventDefault();
+                                        irAListaDespachos('LOTE_FALTANTE');
+                                    }
+                                }}
                                 style={{
                                     ...estilos.filaAlerta,
-                                    ...estilos.alertaLote
+                                    ...estilos.alertaLote,
+                                    cursor: !cargandoIndicadores && indicadores.entregas_lote_faltante > 0
+                                        ? 'pointer'
+                                        : 'default'
                                 }}
                             >
                                 <div style={estilos.textoAlerta}>
@@ -598,10 +680,27 @@ const tarjetaIndicador = (titulo, valor, unidad, sufijo = '') => (
                             </div>
 
                             <div
+                                onClick={() => {
+                                    if (!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0) {
+                                        irAListaDespachos('TEMPERATURA_PENDIENTE');
+                                    }
+                                }}
+                                role={!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 ? 'button' : undefined}
+                                tabIndex={!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 ? 0 : undefined}
+                                onKeyDown={(e) => {
+                                    if (!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 &&
+                                        (e.key === 'Enter' || e.key === ' ')) {
+                                        e.preventDefault();
+                                        irAListaDespachos('TEMPERATURA_PENDIENTE');
+                                    }
+                                }}
                                 style={{
                                     ...estilos.filaAlerta,
                                     ...estilos.alertaTemperatura,
-                                    marginBottom: 0
+                                    marginBottom: 0,
+                                    cursor: !cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0
+                                        ? 'pointer'
+                                        : 'default'
                                 }}
                             >
                                 <div style={estilos.textoAlerta}>

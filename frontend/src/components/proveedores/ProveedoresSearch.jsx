@@ -10,6 +10,7 @@ function ProveedoresSearch({
     onCampoChange,
     onCriterioChange,
     onNuevo,
+    mostrarNuevo = true,
     onExportar
 }) {
     return (
@@ -79,14 +80,16 @@ function ProveedoresSearch({
 
                 <div className="action-buttons">
 
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={onNuevo}
-                    >
-                        <Plus size={16} />
-                        Nuevo Proveedor
-                    </button>
+                    {mostrarNuevo && (
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={onNuevo}
+                        >
+                            <Plus size={16} />
+                            Nuevo Proveedor
+                        </button>
+                    )}
 
                     <button
                         type="button"
