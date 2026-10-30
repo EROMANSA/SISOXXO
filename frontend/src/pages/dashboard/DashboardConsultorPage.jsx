@@ -242,6 +242,20 @@ const DashboardConsultorPage = () => {
             }
         });
     };
+
+    const irAProveedoresDocumentosVencidos = () => {
+        const params = new URLSearchParams({
+            filtro: 'DOCUMENTOS_VENCIDOS'
+        });
+
+        if (tipoRubro) params.set('tipoRubro', tipoRubro);
+        if (proveedorId) params.set('proveedorId', proveedorId);
+
+        navigate({
+            pathname: '/providers',
+            search: `?${params.toString()}`
+        });
+    };
     const [tienda, setTienda] = useState(null);
     const [rubros, setRubros] = useState([]);
     const [proveedores, setProveedores] = useState([]);
@@ -401,9 +415,9 @@ const DashboardConsultorPage = () => {
         setEstadoDespacho('');
     };
 
-    const formatearNumero = (valor) =>
+    const formatearNumero = (valor, maximoDecimales = 2) =>
         new Intl.NumberFormat('es-PE', {
-            maximumFractionDigits: 2
+            maximumFractionDigits: maximoDecimales
         }).format(valor);
 
  
@@ -412,7 +426,8 @@ const tarjetaIndicador = (
     valor,
     unidad,
     sufijo = '',
-    filtro = ''
+    filtro = '',
+    maximoDecimales = 2
 ) => {
     const habilitada = Boolean(
         filtro && !cargandoIndicadores && Number(valor) > 0
@@ -440,7 +455,7 @@ const tarjetaIndicador = (
             <div style={estilos.valor}>
                 {cargandoIndicadores
                     ? '...'
-                    : `${formatearNumero(valor)}${sufijo}`}
+                    : `${formatearNumero(valor, maximoDecimales)}${sufijo}`}
             </div>
             <div style={estilos.unidad}>{unidad}</div>
         </div>
@@ -556,14 +571,17 @@ const tarjetaIndicador = (
                     >
                         {tarjetaIndicador(
                             'Volumen Registrado',
-                            indicadores.volumen_registrado,
-                            'Kilogramos (kg)'
+                            indicadores.volumen_registrado / 1000,
+                            'Toneladas (Tn)',
+                            '',
+                            '',
+                            3
                         )}
 
                         {tarjetaIndicador(
                             'Entregas Registradas',
                             indicadores.entregas_registradas,
-                            'Cantidad de despachos',
+                            'Transacciones del Periodo ',
                             '',
                             'ENTREGAS_REGISTRADAS'
                         )}
@@ -627,9 +645,44 @@ const tarjetaIndicador = (
                             </div>
 
                             <div
+                                onClick={() => {
+                                    if (
+                                        !cargandoIndicadores &&
+                                        indicadores.documentos_vencidos > 0
+                                    ) {
+                                        irAProveedoresDocumentosVencidos();
+                                    }
+                                }}
+                                role={
+                                    !cargandoIndicadores &&
+                                    indicadores.documentos_vencidos > 0
+                                        ? 'button'
+                                        : undefined
+                                }
+                                tabIndex={
+                                    !cargandoIndicadores &&
+                                    indicadores.documentos_vencidos > 0
+                                        ? 0
+                                        : undefined
+                                }
+                                onKeyDown={(e) => {
+                                    if (
+                                        !cargandoIndicadores &&
+                                        indicadores.documentos_vencidos > 0 &&
+                                        (e.key === 'Enter' || e.key === ' ')
+                                    ) {
+                                        e.preventDefault();
+                                        irAProveedoresDocumentosVencidos();
+                                    }
+                                }}
                                 style={{
                                     ...estilos.filaAlerta,
-                                    ...estilos.alertaDocumento
+                                    ...estilos.alertaDocumento,
+                                    cursor:
+                                        !cargandoIndicadores &&
+                                        indicadores.documentos_vencidos > 0
+                                            ? 'pointer'
+                                            : 'default'
                                 }}
                             >
                                 <div style={estilos.textoAlerta}>

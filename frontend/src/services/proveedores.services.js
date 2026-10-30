@@ -19,8 +19,10 @@ proveedoresApi.interceptors.request.use((config) => {
     return config;
 });
 
-export const listarProveedores = async () => {
-    const response = await proveedoresApi.get('/proveedores');
+export const listarProveedores = async (filtros = {}) => {
+    const response = await proveedoresApi.get('/proveedores', {
+        params: filtros
+    });
     return response.data;
 };
 

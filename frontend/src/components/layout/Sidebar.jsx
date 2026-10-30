@@ -211,7 +211,7 @@ function Sidebar() {
         style={linkStyle}
     >
         <Truck size={18} />
-        {esConsultor ? 'Consultar Despachos' : 'Registrar Despachos'}
+        {esConsultor ? 'Consultar Recepciones' : 'Registrar Despachos'}
     </NavLink>
 )}
 

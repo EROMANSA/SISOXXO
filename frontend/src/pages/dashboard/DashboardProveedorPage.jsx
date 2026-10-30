@@ -444,12 +444,12 @@ setIndicadores({
                                 {cargandoIndicadores
                                 ? '...'
                                 : formatearNumero(
-                                    indicadores.volumen_registrado
+                                    indicadores.volumen_registrado / 1000
                                 )}
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Kilogramos (kg)
+                                Toneladas (Tn)
                             </div>
 
                         </div>
@@ -483,7 +483,7 @@ style={{
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Cantidad de despachos
+                                Transacciones del Periodo
                             </div>
                         </div>
 

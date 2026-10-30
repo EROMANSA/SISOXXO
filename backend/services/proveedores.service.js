@@ -1,7 +1,7 @@
 const proveedoresRepository = require('../repositories/proveedores.repository');
 
-const listarProveedores = async () => {
-    return await proveedoresRepository.listarProveedores();
+const listarProveedores = async (filtros = {}) => {
+    return await proveedoresRepository.listarProveedores(filtros);
 };
 
 const registrarProveedor = async (datos) => {

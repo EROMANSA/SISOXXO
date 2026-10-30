@@ -1,6 +1,12 @@
 const pool = require('../config/database');
 
-const listarProveedores = async () => {
+const listarProveedores = async (filtros = {}) => {
+    const {
+        soloDocumentosVencidos = false,
+        usuarioId = null,
+        tipoRubro = null,
+        proveedorId = null
+    } = filtros;
 
     const query = `
         SELECT
@@ -73,11 +79,45 @@ const listarProveedores = async () => {
             AND lc.tipo_grupo = 'CODIGO_CIIU_SUNAT'
             AND lc.codigo_valor = p.ciiu
 
+        WHERE
+            ($1::boolean = FALSE OR (
+                (
+                       p.f_fin_doc_sanita::date
+                           < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+                    OR p.f_fin_otro_doc::date
+                           < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+                    OR p.f_fin_doc_vehi::date
+                           < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+                )
+                AND EXISTS (
+                    SELECT 1
+                    FROM sisoxxo."MOV_TRANSACCIONES" mt_doc
+                    INNER JOIN sisoxxo."SEG_USUARIO" u
+                        ON TRIM(u.cod_tienda::text) = TRIM(mt_doc.destino_id::text)
+                    INNER JOIN sisoxxo."SEG_ROL" r
+                        ON r.rol_id = u.rol_id
+                       AND r.codigo = 'CONSULTOR'
+                    WHERE mt_doc.proveedor_id = p.proveedor_id
+                      AND u.usuario_id = $2
+                      AND u.estado = 'A'
+                      AND u.estado_usuario = 'A'
+                )
+            ))
+            AND ($3::varchar IS NULL OR p.tipo_rubro = $3)
+            AND ($4::integer IS NULL OR p.proveedor_id = $4)
+
         ORDER BY
             p.proveedor_id
     `;
 
-    const result = await pool.query(query);
+    const values = [
+        soloDocumentosVencidos,
+        usuarioId,
+        tipoRubro,
+        proveedorId
+    ];
+
+    const result = await pool.query(query, values);
 
     return result.rows;
 };

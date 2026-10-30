@@ -83,7 +83,7 @@ const obtenerDespachoPorIdService = async (
     // Validar rol
     if (!['PROVEEDOR', 'CONSULTOR'].includes(rol)) {
         const error = new Error(
-            'Rol no válido para consultar despachos.'
+            'Rol no válido para Consultar Recepciones.'
         );
 
         error.codigo = 'ROL_INVALIDO';

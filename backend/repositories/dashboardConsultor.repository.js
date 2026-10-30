@@ -140,17 +140,25 @@ const obtenerIndicadoresDashboard = async ({
                   < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
         ),
         documentos_vencidos AS (
-            SELECT COUNT(*) AS cantidad
-            FROM sisoxxo."MAE_PROVEEDOR" p
-            INNER JOIN proveedores_filtrados pf
-                ON pf.proveedor_id = p.proveedor_id
-            WHERE p.f_fin_doc_sanita::date
-                      < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
-               OR p.f_fin_otro_doc::date
-                      < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
-               OR p.f_fin_doc_vehi::date
-                      < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
-        ),
+    SELECT COUNT(*) AS cantidad
+    FROM sisoxxo."MAE_PROVEEDOR" p
+    INNER JOIN proveedores_filtrados pf
+        ON pf.proveedor_id = p.proveedor_id
+    WHERE (
+           p.f_fin_doc_sanita::date
+               < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+        OR p.f_fin_otro_doc::date
+               < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+        OR p.f_fin_doc_vehi::date
+               < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+    )
+    AND EXISTS (
+        SELECT 1
+        FROM sisoxxo."MOV_TRANSACCIONES" mt_doc
+        WHERE mt_doc.proveedor_id = p.proveedor_id
+          AND mt_doc.destino_id::varchar = $1
+    )
+),
         alerta_lote_faltante AS (
             SELECT COUNT(*) AS cantidad
             FROM sisoxxo."MOV_TRANSACCIONES" mt

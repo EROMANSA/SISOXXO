@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 import {
@@ -10,6 +11,12 @@ import ProveedoresTable from '../../components/proveedores/ProveedoresTable';
 import ProveedoresForm from '../../components/proveedores/ProveedoresForm';
 
 function ProveedoresPage() {
+
+    const [searchParams] = useSearchParams();
+    const filtroDocumentosVencidos =
+        searchParams.get('filtro') === 'DOCUMENTOS_VENCIDOS';
+    const tipoRubroFiltro = searchParams.get('tipoRubro') || '';
+    const proveedorIdFiltro = searchParams.get('proveedorId') || '';
 
     const usuarioGuardado = localStorage.getItem('usuario');
 
@@ -46,7 +53,15 @@ function ProveedoresPage() {
             setCargando(true);
             setError('');
 
-            const response = await listarProveedores();
+            const filtros = filtroDocumentosVencidos
+                ? {
+                    filtro: 'DOCUMENTOS_VENCIDOS',
+                    tipoRubro: tipoRubroFiltro || undefined,
+                    proveedorId: proveedorIdFiltro || undefined
+                }
+                : {};
+
+            const response = await listarProveedores(filtros);
 
             setProveedores(response.data || []);
 
@@ -70,7 +85,11 @@ function ProveedoresPage() {
 
     useEffect(() => {
         cargarProveedores();
-    }, []);
+    }, [
+        filtroDocumentosVencidos,
+        tipoRubroFiltro,
+        proveedorIdFiltro
+    ]);
 
     const proveedoresFiltrados = useMemo(() => {
 
@@ -215,7 +234,11 @@ return (
 
         {!mostrarFormulario ? (
             <>
-                <h1>Proveedores</h1>
+                <h1>
+                    {filtroDocumentosVencidos
+                        ? 'Proveedores con documentos vencidos'
+                        : 'Proveedores'}
+                </h1>
 
                 <ProveedoresSearch
                     campoBusqueda={campoBusqueda}

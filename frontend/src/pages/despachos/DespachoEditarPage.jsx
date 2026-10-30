@@ -324,11 +324,13 @@ const CAMPOS_RUBRO = {
             titulo: 'Fecha Cosecha',
             tipo: 'date'
         },
+        /*
         {
             campo: 'fecha_ingreso',
             titulo: 'Fecha Ingreso',
             tipo: 'date'
         }
+        */
     ]
 
 };

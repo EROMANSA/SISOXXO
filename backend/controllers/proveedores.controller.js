@@ -2,7 +2,43 @@ const proveedoresService = require('../services/proveedores.service');
 
 const listarProveedores = async (req, res) => {
     try {
-        const proveedores = await proveedoresService.listarProveedores();
+        const esConsultor = req.user?.rol_codigo === 'CONSULTOR';
+        const filtroDocumentosVencidos =
+            req.query?.filtro === 'DOCUMENTOS_VENCIDOS';
+
+        let filtros = {};
+
+        if (esConsultor && filtroDocumentosVencidos) {
+            const usuarioId = req.user?.usuario_id;
+
+            if (!usuarioId) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'No se pudo identificar al usuario CONSULTOR.'
+                });
+            }
+
+            const proveedorId = req.query?.proveedorId || null;
+
+            if (
+                proveedorId !== null &&
+                (!/^[0-9]+$/.test(String(proveedorId)) || Number(proveedorId) <= 0)
+            ) {
+                return res.status(400).json({
+                    ok: false,
+                    mensaje: 'El filtro de proveedor no es válido.'
+                });
+            }
+
+            filtros = {
+                soloDocumentosVencidos: true,
+                usuarioId,
+                tipoRubro: req.query?.tipoRubro || null,
+                proveedorId
+            };
+        }
+
+        const proveedores = await proveedoresService.listarProveedores(filtros);
 
         res.status(200).json({
             ok: true,

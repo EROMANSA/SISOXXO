@@ -433,10 +433,12 @@ const columnasPorRubro = {
             campo: 'fecha_cosecha',
             titulo: 'FECHA COSECHA'
         },
+        /*
         {
             campo: 'fecha_ingreso',
             titulo: 'FECHA INGRESO'
         },
+        */
         {
             campo: 'observaciones',
             titulo: 'OBSERVACIONES'
