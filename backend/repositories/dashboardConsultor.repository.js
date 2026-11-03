@@ -92,7 +92,9 @@ const obtenerIndicadoresDashboard = async ({
     tiendaId,
     tipoRubro = null,
     proveedorId = null,
-    estadoDespacho = null
+    estadoDespacho = null,
+    fechaInicio = null,
+    fechaFin = null
 }) => {
     const query = `
         WITH proveedores_filtrados AS (
@@ -114,6 +116,8 @@ const obtenerIndicadoresDashboard = async ({
             WHERE mt.destino_id::varchar = $1
               AND mt.estado_despacho IS DISTINCT FROM 'CAN'
               AND ($4::varchar IS NULL OR mt.estado_despacho = $4)
+              AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
+              AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
         ),
         trazabilidad AS (
             SELECT
@@ -128,6 +132,8 @@ const obtenerIndicadoresDashboard = async ({
                 ON pf.proveedor_id = mt.proveedor_id
             WHERE mt.destino_id::varchar = $1
               AND mt.estado_despacho IS DISTINCT FROM 'CAN'
+              AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
+              AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
         ),
         alertas_pendientes AS (
             SELECT COUNT(*) AS cantidad
@@ -138,6 +144,8 @@ const obtenerIndicadoresDashboard = async ({
               AND mt.estado_despacho = 'PRO'
               AND mt.fecha_programacion::date
                   < (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date
+              AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
+              AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
         ),
         documentos_vencidos AS (
     SELECT COUNT(*) AS cantidad
@@ -232,7 +240,9 @@ const obtenerIndicadoresDashboard = async ({
         tiendaId,
         tipoRubro || null,
         proveedorId ? Number(proveedorId) : null,
-        estadoDespacho || null
+        estadoDespacho || null,
+        fechaInicio || null,
+        fechaFin || null
     ];
 
     const result = await pool.query(query, values);

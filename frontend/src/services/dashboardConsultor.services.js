@@ -58,7 +58,9 @@ export const listarEstadosConsultor = async () => {
 export const obtenerIndicadoresConsultor = async ({
     tipoRubro = '',
     proveedorId = '',
-    estadoDespacho = ''
+    estadoDespacho = '',
+    fechaInicio = '',
+    fechaFin = ''
 } = {}) => {
     const params = {};
 
@@ -73,6 +75,8 @@ export const obtenerIndicadoresConsultor = async ({
     if (estadoDespacho) {
         params.estadoDespacho = estadoDespacho;
     }
+    if (fechaInicio) params.fechaInicio = fechaInicio;
+    if (fechaFin) params.fechaFin = fechaFin;
 
     const response = await api.get(
         '/dashboard-consultor/indicadores',

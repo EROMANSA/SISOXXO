@@ -264,6 +264,8 @@ const DashboardConsultorPage = () => {
     const [tipoRubro, setTipoRubro] = useState('');
     const [proveedorId, setProveedorId] = useState('');
     const [estadoDespacho, setEstadoDespacho] = useState('');
+    const [fechaInicio, setFechaInicio] = useState('');
+    const [fechaFin, setFechaFin] = useState('');
 
     const [indicadores, setIndicadores] = useState(indicadoresIniciales);
     const [cargandoInicial, setCargandoInicial] = useState(true);
@@ -373,7 +375,9 @@ const DashboardConsultorPage = () => {
                 const respuesta = await obtenerIndicadoresConsultor({
                     tipoRubro,
                     proveedorId,
-                    estadoDespacho
+                    estadoDespacho,
+                    fechaInicio,
+                    fechaFin
                 });
 
                 if (cancelado) return;
@@ -407,12 +411,14 @@ const DashboardConsultorPage = () => {
         return () => {
             cancelado = true;
         };
-    }, [tipoRubro, proveedorId, estadoDespacho]);
+    }, [tipoRubro, proveedorId, estadoDespacho, fechaInicio, fechaFin]);
 
     const limpiarFiltros = () => {
         setTipoRubro('');
         setProveedorId('');
         setEstadoDespacho('');
+        setFechaInicio('');
+        setFechaFin('');
     };
 
     const formatearNumero = (valor, maximoDecimales = 2) =>
@@ -545,6 +551,30 @@ const tarjetaIndicador = (
                             </option>
                         ))}
                     </select>
+                </div>
+
+                <div style={estilos.bloque}>
+                    <label style={estilos.etiqueta}>Fecha Inicio</label>
+                    <input
+                        type="date"
+                        style={estilos.select}
+                        value={fechaInicio}
+                        onChange={(e) => setFechaInicio(e.target.value)}
+                        disabled={cargandoInicial}
+                        max={fechaFin || undefined}
+                    />
+                </div>
+
+                <div style={estilos.bloque}>
+                    <label style={estilos.etiqueta}>Fecha Fin</label>
+                    <input
+                        type="date"
+                        style={estilos.select}
+                        value={fechaFin}
+                        onChange={(e) => setFechaFin(e.target.value)}
+                        disabled={cargandoInicial}
+                        min={fechaInicio || undefined}
+                    />
                 </div>
 
                 <button

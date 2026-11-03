@@ -7,6 +7,44 @@ const {
     obtenerIndicadoresDashboard
 } = require('../repositories/dashboardConsultor.repository');
 
+
+const normalizarFecha = (valor, nombreCampo) => {
+    if (valor === undefined || valor === null || String(valor).trim() === '') {
+        return null;
+    }
+
+    const fecha = String(valor).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        const error = new Error(`El campo ${nombreCampo} debe tener formato YYYY-MM-DD.`);
+        error.codigo = 'FECHA_INVALIDA';
+        throw error;
+    }
+
+    const [anio, mes, dia] = fecha.split('-').map(Number);
+    const fechaValida = new Date(Date.UTC(anio, mes - 1, dia));
+    if (
+        fechaValida.getUTCFullYear() !== anio ||
+        fechaValida.getUTCMonth() !== mes - 1 ||
+        fechaValida.getUTCDate() !== dia
+    ) {
+        const error = new Error(`El campo ${nombreCampo} no contiene una fecha válida.`);
+        error.codigo = 'FECHA_INVALIDA';
+        throw error;
+    }
+    return fecha;
+};
+
+const validarRangoFechas = (fechaInicio, fechaFin) => {
+    const inicio = normalizarFecha(fechaInicio, 'fechaInicio');
+    const fin = normalizarFecha(fechaFin, 'fechaFin');
+    if (inicio && fin && inicio > fin) {
+        const error = new Error('La Fecha Inicio no puede ser posterior a la Fecha Fin.');
+        error.codigo = 'RANGO_FECHAS_INVALIDO';
+        throw error;
+    }
+    return { fechaInicio: inicio, fechaFin: fin };
+};
+
 // ============================================================
 // VALIDAR IDENTIFICADOR DEL USUARIO
 // ============================================================
@@ -83,7 +121,9 @@ const obtenerIndicadoresDashboardService = async ({
     usuarioId,
     tipoRubro,
     proveedorId,
-    estadoDespacho
+    estadoDespacho,
+    fechaInicio,
+    fechaFin
 }) => {
     const tienda = await obtenerTiendaConsultorService(usuarioId);
 
@@ -133,11 +173,13 @@ const obtenerIndicadoresDashboardService = async ({
         throw error;
     }
 
+    const rangoFechas = validarRangoFechas(fechaInicio, fechaFin);
     return await obtenerIndicadoresDashboard({
         tiendaId: String(tienda.tienda_id),
         tipoRubro: rubroNormalizado,
         proveedorId: proveedorNormalizado,
-        estadoDespacho: estadoNormalizado
+        estadoDespacho: estadoNormalizado,
+        ...rangoFechas
     });
 };
 

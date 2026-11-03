@@ -82,14 +82,18 @@ const obtenerIndicadoresDashboard = async (req, res) => {
 
         const {
             tiendaId,
-            estadoDespacho
+            estadoDespacho,
+            fechaInicio,
+            fechaFin
         } = req.query;
 
         const indicadores =
             await obtenerIndicadoresDashboardService({
                 proveedorId,
                 tiendaId,
-                estadoDespacho
+                estadoDespacho,
+                fechaInicio,
+                fechaFin
             });
 
         return res.status(200).json({
@@ -105,7 +109,9 @@ const obtenerIndicadoresDashboard = async (req, res) => {
 
         if (
             error.codigo === 'PROVEEDOR_INVALIDO' ||
-            error.codigo === 'ESTADO_DESPACHO_INVALIDO'
+            error.codigo === 'ESTADO_DESPACHO_INVALIDO' ||
+            error.codigo === 'FECHA_INVALIDA' ||
+            error.codigo === 'RANGO_FECHAS_INVALIDO'
         ) {
             return res.status(400).json({
                 ok: false,

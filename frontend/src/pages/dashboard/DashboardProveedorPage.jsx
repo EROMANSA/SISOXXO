@@ -196,8 +196,7 @@ const DashboardProveedorPage = () => {
     navigate('/despachos', {
         state: {
             filtroDashboard: filtro,
-            estadoDespacho,
-            tiendaId
+            estadoDespacho
         }
     });
 };
@@ -207,6 +206,8 @@ const DashboardProveedorPage = () => {
 
     const [tiendaId, setTiendaId] = useState('');
     const [estadoDespacho, setEstadoDespacho] = useState('');
+    const [fechaInicio, setFechaInicio] = useState('');
+    const [fechaFin, setFechaFin] = useState('');
 
     
 
@@ -277,7 +278,9 @@ const [indicadores, setIndicadores] = useState({
 
                 const respuesta = await obtenerIndicadoresDashboard({
                     tiendaId,
-                    estadoDespacho
+                    estadoDespacho,
+                    fechaInicio,
+                    fechaFin
                 });
 
                 if (!cancelado) {
@@ -332,11 +335,13 @@ setIndicadores({
         return () => {
             cancelado = true;
         };
-    }, [tiendaId, estadoDespacho]);
+    }, [tiendaId, estadoDespacho, fechaInicio, fechaFin]);
 
     const limpiarFiltros = () => {
         setTiendaId('');
         setEstadoDespacho('');
+        setFechaInicio('');
+        setFechaFin('');
     };
 
     const formatearNumero = (valor) =>
@@ -410,6 +415,30 @@ setIndicadores({
                     </select>
                 </div>
 
+                <div style={estilos.bloqueFiltro}>
+                    <label style={estilos.etiqueta}>Fecha Inicio</label>
+                    <input
+                        type="date"
+                        value={fechaInicio}
+                        onChange={(e) => setFechaInicio(e.target.value)}
+                        style={estilos.select}
+                        disabled={cargandoInicial}
+                        max={fechaFin || undefined}
+                    />
+                </div>
+
+                <div style={estilos.bloqueFiltro}>
+                    <label style={estilos.etiqueta}>Fecha Fin</label>
+                    <input
+                        type="date"
+                        value={fechaFin}
+                        onChange={(e) => setFechaFin(e.target.value)}
+                        style={estilos.select}
+                        disabled={cargandoInicial}
+                        min={fechaInicio || undefined}
+                    />
+                </div>
+
                 <button
                     type="button"
                     style={estilos.botonLimpiar}
@@ -444,18 +473,18 @@ setIndicadores({
                                 {cargandoIndicadores
                                 ? '...'
                                 : formatearNumero(
-                                    indicadores.volumen_registrado / 1000
+                                    indicadores.volumen_registrado
                                 )}
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Toneladas (Tn)
+                                Kilogramos (kg)
                             </div>
 
                         </div>
 
                         {/* TARJETA: ENTREGAS */}
-                        <div onClick={() => {
+                        <div snClick={() => {
     if (
         !cargandoIndicadores &&
         indicadores.entregas_registradas > 0
@@ -471,7 +500,11 @@ style={{
             ? 'pointer'
             : 'default'
 }}>
-                                <div style={estilos.tarjetaTitulo}>
+                                o
+
+
+
+                            <div style={estilos.tarjetaTitulo}>
                                 Entregas Registradas
                             </div>
                             <div style={estilos.tarjetaValor}>
@@ -483,7 +516,7 @@ style={{
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Transacciones del Periodo
+                                Cantidad de despachos
                             </div>
                         </div>
 

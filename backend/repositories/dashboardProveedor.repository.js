@@ -49,7 +49,9 @@ const listarEstadosDespachoDashboard = async () => {
 const obtenerIndicadoresDashboard = async ({
     proveedorId,
     tiendaId = null,
-    estadoDespacho = null
+    estadoDespacho = null,
+    fechaInicio = null,
+    fechaFin = null
 }) => {
     const query = `
         WITH despachos_filtrados AS (
@@ -69,6 +71,8 @@ const obtenerIndicadoresDashboard = async ({
                     $3::varchar IS NULL
                     OR mt.estado_despacho = $3
               )
+              AND ($4::date IS NULL OR mt.create_date::date >= $4::date)
+              AND ($5::date IS NULL OR mt.create_date::date <= $5::date)
         ),
         despachos_trazabilidad AS (
             SELECT
@@ -85,6 +89,8 @@ const obtenerIndicadoresDashboard = async ({
                     $2::varchar IS NULL
                     OR mt.destino_id::varchar = $2
               )
+              AND ($4::date IS NULL OR mt.create_date::date >= $4::date)
+              AND ($5::date IS NULL OR mt.create_date::date <= $5::date)
         ),
         alertas_pendientes AS (
             SELECT COUNT(*) AS cantidad
@@ -97,6 +103,8 @@ const obtenerIndicadoresDashboard = async ({
                     $2::varchar IS NULL
                     OR mt.destino_id::varchar = $2
               )
+              AND ($4::date IS NULL OR mt.create_date::date >= $4::date)
+              AND ($5::date IS NULL OR mt.create_date::date <= $5::date)
         ),
         alerta_documentos_vencidos AS (
             SELECT COUNT(*) AS cantidad
@@ -207,7 +215,9 @@ const obtenerIndicadoresDashboard = async ({
     const values = [
         proveedorId,
         tiendaId || null,
-        estadoDespacho || null
+        estadoDespacho || null,
+        fechaInicio || null,
+        fechaFin || null
     ];
 
     const result = await pool.query(query, values);

@@ -142,7 +142,9 @@ const obtenerIndicadoresDashboard = async (req, res) => {
         const {
             tipoRubro,
             proveedorId,
-            estadoDespacho
+            estadoDespacho,
+            fechaInicio,
+            fechaFin
         } = req.query;
 
         const indicadores =
@@ -150,7 +152,9 @@ const obtenerIndicadoresDashboard = async (req, res) => {
                 usuarioId,
                 tipoRubro,
                 proveedorId,
-                estadoDespacho
+                estadoDespacho,
+                fechaInicio,
+                fechaFin
             });
 
         return res.status(200).json({
@@ -168,7 +172,9 @@ const obtenerIndicadoresDashboard = async (req, res) => {
                 'USUARIO_INVALIDO',
                 'TIENDA_CONSULTOR_INVALIDA',
                 'PROVEEDOR_INVALIDO',
-                'ESTADO_DESPACHO_INVALIDO'
+                'ESTADO_DESPACHO_INVALIDO',
+                'FECHA_INVALIDA',
+                'RANGO_FECHAS_INVALIDO'
             ].includes(error.codigo)
         ) {
             return res.status(400).json({
