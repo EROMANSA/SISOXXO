@@ -1,3 +1,4 @@
+
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -7,6 +8,12 @@ const pool = new Pool({
     database: process.env.DB_NAME,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
+
+    // Habilitar conexión SSL/TLS para Render PostgreSQL
+    ssl: {
+        rejectUnauthorized: false
+    },
+
     options: `-c search_path=${process.env.DB_SCHEMA},public`,
 });
 
