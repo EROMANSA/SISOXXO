@@ -225,7 +225,10 @@ const indicadoresIniciales = {
     alertas_pendientes: 0,
     documentos_vencidos: 0,
     entregas_lote_faltante: 0,
-    entregas_temperatura_pendiente: 0
+    entregas_fecha_vencimiento_lote: 0,
+    entregas_registro_sanitario: 0,
+    entregas_temperatura_pendiente: 0,
+    entregas_procedencia: 0
 };
 
 const DashboardConsultorPage = () => {
@@ -391,9 +394,16 @@ const DashboardConsultorPage = () => {
                     alertas_pendientes: Number(datos.alertas_pendientes ?? 0),
                     documentos_vencidos: Number(datos.documentos_vencidos ?? 0),
                     entregas_lote_faltante: Number(datos.entregas_lote_faltante ?? 0),
+                    entregas_fecha_vencimiento_lote: Number(
+                        datos.entregas_fecha_vencimiento_lote ?? 0
+                    ),
+                    entregas_registro_sanitario: Number(
+                        datos.entregas_registro_sanitario ?? 0
+                    ),
                     entregas_temperatura_pendiente: Number(
                         datos.entregas_temperatura_pendiente ?? 0
-                    )
+                    ),
+                    entregas_procedencia: Number(datos.entregas_procedencia ?? 0)
                 });
             } catch (err) {
                 console.error('Error al cargar indicadores del consultor:', err);
@@ -464,6 +474,37 @@ const tarjetaIndicador = (
                     : `${formatearNumero(valor, maximoDecimales)}${sufijo}`}
             </div>
             <div style={estilos.unidad}>{unidad}</div>
+        </div>
+    );
+};
+
+const filaAlertaRevision = (titulo, valor, filtro, estiloAlerta, sinMargen = false) => {
+    const habilitada = !cargandoIndicadores && Number(valor) > 0;
+
+    return (
+        <div
+            onClick={() => {
+                if (habilitada) irAListaDespachos(filtro);
+            }}
+            role={habilitada ? 'button' : undefined}
+            tabIndex={habilitada ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (habilitada && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    irAListaDespachos(filtro);
+                }
+            }}
+            style={{
+                ...estilos.filaAlerta,
+                ...estiloAlerta,
+                marginBottom: sinMargen ? 0 : estilos.filaAlerta.marginBottom,
+                cursor: habilitada ? 'pointer' : 'default'
+            }}
+        >
+            <div style={estilos.textoAlerta}>{titulo}</div>
+            <div style={estilos.numeroAlerta}>
+                {cargandoIndicadores ? '...' : formatearNumero(valor)}
+            </div>
         </div>
     );
 };
@@ -619,7 +660,7 @@ const tarjetaIndicador = (
                         {tarjetaIndicador(
     'Trazabilidad Completa',
     indicadores.trazabilidad_completa,
-    'Entregados respecto a Programados',
+    'Lotes Registrados',
     ' %'
 )}
 
@@ -727,76 +768,41 @@ const tarjetaIndicador = (
                                 </div>
                             </div>
 
-                            <div
-                                onClick={() => {
-                                    if (!cargandoIndicadores && indicadores.entregas_lote_faltante > 0) {
-                                        irAListaDespachos('LOTE_FALTANTE');
-                                    }
-                                }}
-                                role={!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 ? 'button' : undefined}
-                                tabIndex={!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 ? 0 : undefined}
-                                onKeyDown={(e) => {
-                                    if (!cargandoIndicadores && indicadores.entregas_lote_faltante > 0 &&
-                                        (e.key === 'Enter' || e.key === ' ')) {
-                                        e.preventDefault();
-                                        irAListaDespachos('LOTE_FALTANTE');
-                                    }
-                                }}
-                                style={{
-                                    ...estilos.filaAlerta,
-                                    ...estilos.alertaLote,
-                                    cursor: !cargandoIndicadores && indicadores.entregas_lote_faltante > 0
-                                        ? 'pointer'
-                                        : 'default'
-                                }}
-                            >
-                                <div style={estilos.textoAlerta}>
-                                    Entrega: procedencia/lote faltante
-                                </div>
-                                <div style={estilos.numeroAlerta}>
-                                    {cargandoIndicadores
-                                        ? '...'
-                                        : formatearNumero(
-                                            indicadores.entregas_lote_faltante
-                                        )}
-                                </div>
-                            </div>
+                            {filaAlertaRevision(
+                                'Entrega: lote faltante',
+                                indicadores.entregas_lote_faltante,
+                                'LOTE_FALTANTE',
+                                estilos.alertaLote
+                            )}
 
-                            <div
-                                onClick={() => {
-                                    if (!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0) {
-                                        irAListaDespachos('TEMPERATURA_PENDIENTE');
-                                    }
-                                }}
-                                role={!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 ? 'button' : undefined}
-                                tabIndex={!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 ? 0 : undefined}
-                                onKeyDown={(e) => {
-                                    if (!cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0 &&
-                                        (e.key === 'Enter' || e.key === ' ')) {
-                                        e.preventDefault();
-                                        irAListaDespachos('TEMPERATURA_PENDIENTE');
-                                    }
-                                }}
-                                style={{
-                                    ...estilos.filaAlerta,
-                                    ...estilos.alertaTemperatura,
-                                    marginBottom: 0,
-                                    cursor: !cargandoIndicadores && indicadores.entregas_temperatura_pendiente > 0
-                                        ? 'pointer'
-                                        : 'default'
-                                }}
-                            >
-                                <div style={estilos.textoAlerta}>
-                                    Entrega: temperatura por revisar
-                                </div>
-                                <div style={estilos.numeroAlerta}>
-                                    {cargandoIndicadores
-                                        ? '...'
-                                        : formatearNumero(
-                                            indicadores.entregas_temperatura_pendiente
-                                        )}
-                                </div>
-                            </div>
+                            {filaAlertaRevision(
+                                'Entrega: fecha vencimiento lote',
+                                indicadores.entregas_fecha_vencimiento_lote,
+                                'FECHA_VENCIMIENTO_LOTE',
+                                estilos.alertaLote
+                            )}
+
+                            {filaAlertaRevision(
+                                'Entrega: registro sanitario',
+                                indicadores.entregas_registro_sanitario,
+                                'REGISTRO_SANITARIO',
+                                estilos.alertaLote
+                            )}
+
+                            {filaAlertaRevision(
+                                'Entrega: temperatura por revisar',
+                                indicadores.entregas_temperatura_pendiente,
+                                'TEMPERATURA_PENDIENTE',
+                                estilos.alertaTemperatura
+                            )}
+
+                            {filaAlertaRevision(
+                                'Entrega: procedencia',
+                                indicadores.entregas_procedencia,
+                                'PROCEDENCIA_FALTANTE',
+                                estilos.alertaLote,
+                                true
+                            )}
                         </div>
                     </div>
                 </>

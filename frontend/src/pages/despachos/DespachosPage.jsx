@@ -274,6 +274,14 @@ const DespachosPage = () => {
                 rol === 'CONSULTOR' &&
                 Boolean(filtroDashboard);
 
+            const filtrosDetalleDashboard = [
+                'LOTE_FALTANTE',
+                'FECHA_VENCIMIENTO_LOTE',
+                'REGISTRO_SANITARIO',
+                'TEMPERATURA_PENDIENTE',
+                'PROCEDENCIA_FALTANTE'
+            ];
+
             const requiereDetalleProveedor =
                 rol === 'PROVEEDOR' &&
                 ['LOTE_FALTANTE', 'TEMPERATURA_PENDIENTE'].includes(filtroDashboard);
@@ -333,34 +341,60 @@ const DespachosPage = () => {
                                     : null;
                             }
 
-                            if (['LOTE_FALTANTE', 'TEMPERATURA_PENDIENTE'].includes(filtroDashboard)) {
+                            if (filtrosDetalleDashboard.includes(filtroDashboard)) {
                                 if (estado !== 'DSP') return null;
 
+                                // Cada alerta evalúa exclusivamente su campo,
+                                // salvo el filtro histórico del PROVEEDOR, que
+                                // conserva la regla combinada anterior.
                                 const detallesConFaltantes = detalles.some((detalle) => {
-                                    if (filtroDashboard === 'LOTE_FALTANTE') {
-                                        const codigoLote = detalle.codigo_lote ?? detalle.codigo_nro_lote;
-                                        const fechaLote = detalle.fecha_vencimiento_lote ?? detalle.fecha_lote_venci;
-                                        return (
-                                            codigoLote == null ||
-                                            String(codigoLote).trim() === '' ||
-                                            fechaLote == null ||
-                                            String(fechaLote).trim() === ''
-                                        );
-                                    }
+                                    const estaVacio = (valor) =>
+                                        valor == null || String(valor).trim() === '';
 
-                                    const terminalOrigen = detalle.terminal_origen;
-                                    const temperatura = detalle.temperatura_descarga;
-                                    return (
-                                        terminalOrigen == null ||
-                                        String(terminalOrigen).trim() === '' ||
-                                        temperatura == null ||
-                                        String(temperatura).trim() === ''
-                                    );
+                                    switch (filtroDashboard) {
+                                        case 'LOTE_FALTANTE': {
+                                            const codigoLote =
+                                                detalle.codigo_lote ?? detalle.codigo_nro_lote;
+                                            const fechaLote =
+                                                detalle.fecha_vencimiento_lote ?? detalle.fecha_lote_venci;
+
+                                            if (rol === 'PROVEEDOR') {
+                                                return estaVacio(codigoLote) || estaVacio(fechaLote);
+                                            }
+
+                                            return estaVacio(codigoLote);
+                                        }
+
+                                        case 'FECHA_VENCIMIENTO_LOTE': {
+                                            const fechaLote =
+                                                detalle.fecha_vencimiento_lote ?? detalle.fecha_lote_venci;
+                                            return estaVacio(fechaLote);
+                                        }
+
+                                        case 'REGISTRO_SANITARIO':
+                                            return estaVacio(detalle.registro_sanitario);
+
+                                        case 'TEMPERATURA_PENDIENTE':
+                                            return (
+                                                estaVacio(detalle.terminal_origen) ||
+                                                estaVacio(detalle.temperatura_descarga)
+                                            );
+
+                                        case 'PROCEDENCIA_FALTANTE':
+                                            return estaVacio(detalle.procedencia);
+
+                                        default:
+                                            return false;
+                                    }
                                 });
 
-                                const rubroValido = filtroDashboard === 'LOTE_FALTANTE'
-                                    ? ['001', '003', '004'].includes(rubro)
-                                    : rubro === '002';
+                                const rubroValido = {
+                                    LOTE_FALTANTE: ['001', '003', '004'].includes(rubro),
+                                    FECHA_VENCIMIENTO_LOTE: ['001', '003', '004'].includes(rubro),
+                                    REGISTRO_SANITARIO: rubro === '003',
+                                    TEMPERATURA_PENDIENTE: rubro === '002',
+                                    PROCEDENCIA_FALTANTE: rubro === '004'
+                                }[filtroDashboard];
 
                                 return rubroValido && detallesConFaltantes
                                     ? despacho.transac_id
@@ -428,7 +462,13 @@ const DespachosPage = () => {
                     obtenerFechaISO(despacho.fecha_programacion) < hoyLima
                 );
             } else if (
-                ['LOTE_FALTANTE', 'TEMPERATURA_PENDIENTE'].includes(filtroDashboard) &&
+                [
+                    'LOTE_FALTANTE',
+                    'FECHA_VENCIMIENTO_LOTE',
+                    'REGISTRO_SANITARIO',
+                    'TEMPERATURA_PENDIENTE',
+                    'PROCEDENCIA_FALTANTE'
+                ].includes(filtroDashboard) &&
                 idsFiltradosDashboard instanceof Set
             ) {
                 resultado = resultado.filter((despacho) =>
@@ -672,10 +712,16 @@ const exportarExcel = async () => {
                         : filtroDashboard === 'ALERTAS_PENDIENTES'
                             ? 'Se muestran despachos PRO con fecha de programación anterior al día actual de Lima.'
                             : filtroDashboard === 'LOTE_FALTANTE'
-                                ? 'Se muestran despachos DSP de rubros 001, 003 o 004 con número de lote o fecha de vencimiento faltante.'
-                                : filtroDashboard === 'TEMPERATURA_PENDIENTE'
-                                    ? 'Se muestran despachos DSP del rubro 002 con procedencia (terminal de origen) o temperatura de descarga faltante.'
-                                    : ''}
+                                ? 'Se muestran despachos DSP de rubros 001, 003 o 004 con número de lote faltante.'
+                                : filtroDashboard === 'FECHA_VENCIMIENTO_LOTE'
+                                    ? 'Se muestran despachos DSP de rubros 001, 003 o 004 con fecha de vencimiento del lote faltante.'
+                                    : filtroDashboard === 'REGISTRO_SANITARIO'
+                                        ? 'Se muestran despachos DSP del rubro 003 con registro sanitario faltante.'
+                                        : filtroDashboard === 'TEMPERATURA_PENDIENTE'
+                                            ? 'Se muestran despachos DSP del rubro 002 con terminal de origen o temperatura de descarga faltante.'
+                                            : filtroDashboard === 'PROCEDENCIA_FALTANTE'
+                                                ? 'Se muestran despachos DSP del rubro 004 con procedencia faltante.'
+                                                : ''}
                 </div>
             )}
 

@@ -119,21 +119,75 @@ const obtenerIndicadoresDashboard = async ({
               AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
               AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
         ),
-        trazabilidad AS (
+        lineas_trazabilidad AS (
             SELECT
-                COUNT(*) FILTER (
-                    WHERE mt.estado_despacho = 'DSP'
-                ) AS entregados,
-                COUNT(*) FILTER (
-                    WHERE mt.estado_despacho = 'PRO'
-                ) AS programados
-            FROM sisoxxo."MOV_TRANSACCIONES" mt
+                d.*,
+                pf.tipo_rubro
+            FROM sisoxxo."MOV_TRANSAC_DETALLE" d
+            INNER JOIN sisoxxo."MOV_TRANSACCIONES" mt
+                ON mt.transac_id = d.transac_id
             INNER JOIN proveedores_filtrados pf
                 ON pf.proveedor_id = mt.proveedor_id
             WHERE mt.destino_id::varchar = $1
               AND mt.estado_despacho IS DISTINCT FROM 'CAN'
               AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
               AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
+        ),
+        trazabilidad AS (
+            SELECT
+                COUNT(*) AS total_lineas,
+                COUNT(*) FILTER (
+                    WHERE
+                        -- Campos comunes obligatorios para todos los rubros
+                        NULLIF(BTRIM(producto_especie::text), '') IS NULL
+                        OR cantidad IS NULL
+                        OR NULLIF(BTRIM(tipo_unid_med::text), '') IS NULL
+                        OR pesaje_en_kg IS NULL
+
+                        -- Rubro 001: Carnes y aves
+                        OR (
+                            tipo_rubro = '001'
+                            AND (
+                                fecha_beneficio_ini IS NULL
+                                OR fecha_beneficio_fin IS NULL
+                                OR NULLIF(BTRIM(nro_guia_nota_venta::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
+                            )
+                        )
+
+                        -- Rubro 002: Pescados y mariscos
+                        OR (
+                            tipo_rubro = '002'
+                            AND (
+                                NULLIF(BTRIM(terminal_origen::text), '') IS NULL
+                                OR NULLIF(BTRIM(temperatura_descarga::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
+                            )
+                        )
+
+                        -- Rubro 003: Abarrotes, lácteos y embutidos
+                        OR (
+                            tipo_rubro = '003'
+                            AND (
+                                NULLIF(BTRIM(registro_sanitario::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
+                            )
+                        )
+
+                        -- Rubro 004: Agro y vegetales
+                        OR (
+                            tipo_rubro = '004'
+                            AND (
+                                NULLIF(BTRIM(procedencia::text), '') IS NULL
+                                OR NULLIF(BTRIM(tipo_despacho::text), '') IS NULL
+                                OR fecha_cosecha IS NULL
+                            )
+                        )
+                ) AS total_lineas_incompletas
+            FROM lineas_trazabilidad
         ),
         alertas_pendientes AS (
             SELECT COUNT(*) AS cantidad
@@ -179,10 +233,52 @@ const obtenerIndicadoresDashboard = async ({
                   SELECT 1
                   FROM sisoxxo."MOV_TRANSAC_DETALLE" d
                   WHERE d.transac_id = mt.transac_id
-                    AND (
-                        NULLIF(TRIM(d.codigo_nro_lote::text), '') IS NULL
-                        OR d.fecha_lote_venci IS NULL
-                    )
+                    AND NULLIF(TRIM(d.codigo_nro_lote::text), '') IS NULL
+              )
+        ),
+        alerta_fecha_vencimiento_lote AS (
+            SELECT COUNT(*) AS cantidad
+            FROM sisoxxo."MOV_TRANSACCIONES" mt
+            INNER JOIN proveedores_filtrados pf
+                ON pf.proveedor_id = mt.proveedor_id
+            WHERE mt.destino_id::varchar = $1
+              AND mt.estado_despacho = 'DSP'
+              AND pf.tipo_rubro IN ('001', '003', '004')
+              AND EXISTS (
+                  SELECT 1
+                  FROM sisoxxo."MOV_TRANSAC_DETALLE" d
+                  WHERE d.transac_id = mt.transac_id
+                    AND d.fecha_lote_venci IS NULL
+              )
+        ),
+        alerta_registro_sanitario AS (
+            SELECT COUNT(*) AS cantidad
+            FROM sisoxxo."MOV_TRANSACCIONES" mt
+            INNER JOIN proveedores_filtrados pf
+                ON pf.proveedor_id = mt.proveedor_id
+            WHERE mt.destino_id::varchar = $1
+              AND mt.estado_despacho = 'DSP'
+              AND pf.tipo_rubro = '003'
+              AND EXISTS (
+                  SELECT 1
+                  FROM sisoxxo."MOV_TRANSAC_DETALLE" d
+                  WHERE d.transac_id = mt.transac_id
+                    AND NULLIF(TRIM(d.registro_sanitario::text), '') IS NULL
+              )
+        ),
+        alerta_procedencia AS (
+            SELECT COUNT(*) AS cantidad
+            FROM sisoxxo."MOV_TRANSACCIONES" mt
+            INNER JOIN proveedores_filtrados pf
+                ON pf.proveedor_id = mt.proveedor_id
+            WHERE mt.destino_id::varchar = $1
+              AND mt.estado_despacho = 'DSP'
+              AND pf.tipo_rubro = '004'
+              AND EXISTS (
+                  SELECT 1
+                  FROM sisoxxo."MOV_TRANSAC_DETALLE" d
+                  WHERE d.transac_id = mt.transac_id
+                    AND NULLIF(TRIM(d.procedencia::text), '') IS NULL
               )
         ),
         alerta_temperatura AS (
@@ -216,8 +312,8 @@ const obtenerIndicadoresDashboard = async ({
 
             COALESCE((
                 SELECT ROUND(
-                    entregados::numeric * 100
-                    / NULLIF(programados, 0),
+                    total_lineas_incompletas::numeric * 100
+                    / NULLIF(total_lineas, 0),
                     2
                 )
                 FROM trazabilidad
@@ -232,8 +328,17 @@ const obtenerIndicadoresDashboard = async ({
             (SELECT cantidad FROM alerta_lote_faltante)
                 AS entregas_lote_faltante,
 
+            (SELECT cantidad FROM alerta_fecha_vencimiento_lote)
+                AS entregas_fecha_vencimiento_lote,
+
+            (SELECT cantidad FROM alerta_registro_sanitario)
+                AS entregas_registro_sanitario,
+
             (SELECT cantidad FROM alerta_temperatura)
-                AS entregas_temperatura_pendiente
+                AS entregas_temperatura_pendiente,
+
+            (SELECT cantidad FROM alerta_procedencia)
+                AS entregas_procedencia
     `;
 
     const values = [
