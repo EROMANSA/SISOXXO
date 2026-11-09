@@ -715,7 +715,7 @@ const filaAlertaRevision = (titulo, valor, filtro, estiloAlerta, sinMargen = fal
                         {tarjetaIndicador(
                             'Entregas Registradas',
                             indicadores.entregas_registradas,
-                            'Transacciones del Periodo ',
+                            'Cantidas de Despachos',
                             '',
                             'ENTREGAS_REGISTRADAS'
                         )}
@@ -723,7 +723,7 @@ const filaAlertaRevision = (titulo, valor, filtro, estiloAlerta, sinMargen = fal
                         {tarjetaIndicador(
     'Trazabilidad Completa',
     indicadores.trazabilidad_completa,
-    'Lotes Registrados',
+    'Líneas incompletas respecto al total de líneas',
     ' %'
 )}
 
