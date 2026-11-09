@@ -141,6 +141,62 @@ const estilos = {
         borderRadius: '8px',
         minHeight: '220px'
     },
+    panelRubros: {
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '10px',
+        padding: '20px',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start'
+    },
+    tituloRubros: {
+        fontSize: '18px',
+        fontWeight: 700,
+        color: '#0F172A',
+        marginBottom: '26px'
+    },
+    filaRubro: {
+        display: 'grid',
+        gridTemplateColumns: 'minmax(150px, 1.45fr) minmax(48px, 0.45fr) minmax(90px, 1fr) minmax(48px, 0.45fr)',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '28px'
+    },
+    nombreRubro: {
+        fontSize: '13px',
+        fontWeight: 600,
+        color: '#334155'
+    },
+    volumenRubro: {
+        fontSize: '14px',
+        fontWeight: 700,
+        color: '#0F172A',
+        textAlign: 'right',
+        whiteSpace: 'nowrap'
+    },
+    barraRubro: {
+        width: '100%',
+        height: '12px',
+        backgroundColor: '#E2E8F0',
+        borderRadius: '999px',
+        overflow: 'hidden'
+    },
+    porcentajeRubro: {
+        fontSize: '14px',
+        fontWeight: 700,
+        color: '#0F172A',
+        textAlign: 'right',
+        whiteSpace: 'nowrap'
+    },
+    leyendaRubro: {
+        fontSize: '11px',
+        color: '#64748B',
+        textAlign: 'right',
+        marginTop: '-20px',
+        marginBottom: '12px'
+    },
     panelAlertas: {
         backgroundColor: '#FFFFFF',
         border: '1px solid #E2E8F0',
@@ -271,6 +327,7 @@ const DashboardConsultorPage = () => {
     const [fechaFin, setFechaFin] = useState('');
 
     const [indicadores, setIndicadores] = useState(indicadoresIniciales);
+    const [volumenTrazabilidadRubros, setVolumenTrazabilidadRubros] = useState([]);
     const [cargandoInicial, setCargandoInicial] = useState(true);
     const [cargandoIndicadores, setCargandoIndicadores] = useState(false);
     const [error, setError] = useState('');
@@ -405,10 +462,16 @@ const DashboardConsultorPage = () => {
                     ),
                     entregas_procedencia: Number(datos.entregas_procedencia ?? 0)
                 });
+
+                const rubrosRespuesta = datos.volumen_trazabilidad_por_rubro;
+                setVolumenTrazabilidadRubros(
+                    Array.isArray(rubrosRespuesta) ? rubrosRespuesta : []
+                );
             } catch (err) {
                 console.error('Error al cargar indicadores del consultor:', err);
 
                 if (!cancelado) {
+                    setVolumenTrazabilidadRubros([]);
                     setError('No fue posible obtener los indicadores del dashboard.');
                 }
             } finally {
@@ -704,11 +767,88 @@ const filaAlertaRevision = (titulo, valor, filtro, estiloAlerta, sinMargen = fal
                         className="consultor-inferior"
                         style={estilos.filaInferior}
                     >
-                        {/* Tarjeta reservada para una definición futura */}
-                        <div
-                            style={estilos.tarjetaVacia}
-                            aria-label="Tarjeta reservada"
-                        />
+                        <div style={estilos.panelRubros}>
+                            <div style={estilos.tituloRubros}>
+                                VOLUMEN Y TRAZABILIDAD POR RUBRO
+                            </div>
+
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'minmax(150px, 1.45fr) minmax(48px, 0.45fr) minmax(90px, 1fr) minmax(48px, 0.45fr)',
+                                alignItems: 'center',
+                                gap: '12px',
+                                marginTop: '-18px',
+                                marginBottom: '18px'
+                            }}>
+                                <div />
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: '#64748B',
+                                    textAlign: 'right',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    Volumen en toneladas
+                                </div>
+                                <div />
+                                <div />
+                            </div>
+
+                            {['001', '002', '003', '004'].map((codigoRubro) => {
+                                const rubro = volumenTrazabilidadRubros.find(
+                                    (item) => String(item.tipo_rubro) === codigoRubro
+                                ) || {};
+
+                                const volumenToneladas =
+                                    Number(rubro.volumen_kg ?? 0) / 1000;
+                                const porcentaje = Math.min(
+                                    100,
+                                    Math.max(0, Number(rubro.trazabilidad_completa ?? 0))
+                                );
+
+                                const nombresRubros = {
+                                    '001': 'Carnes y aves',
+                                    '002': 'Pescados y mariscos',
+                                    '003': 'Abarrotes, lácteos y embutidos',
+                                    '004': 'Agro y vegetales'
+                                };
+
+                                return (
+                                    <div key={codigoRubro} style={estilos.filaRubro}>
+                                        <div style={estilos.nombreRubro}>
+                                            {nombresRubros[codigoRubro]}
+                                        </div>
+
+                                        <div style={estilos.volumenRubro}>
+                                            {cargandoIndicadores
+                                                ? '...'
+                                                : formatearNumero(volumenToneladas, 2)}
+                                        </div>
+
+                                        <div style={estilos.barraRubro}>
+                                            <div
+                                                style={{
+                                                    width: `${porcentaje}%`,
+                                                    height: '100%',
+                                                    backgroundColor: '#159A91',
+                                                    borderRadius: '999px',
+                                                    transition: 'width 0.25s ease'
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div style={estilos.porcentajeRubro}>
+                                            {cargandoIndicadores
+                                                ? '...'
+                                                : `${formatearNumero(porcentaje, 2)}%`}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            <div style={estilos.leyendaRubro}>
+                                Completitud de trazabilidad
+                            </div>
+                        </div>
 
                         <div style={estilos.panelAlertas}>
                             <div style={estilos.tituloAlertas}>

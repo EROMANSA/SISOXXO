@@ -130,6 +130,7 @@ const obtenerIndicadoresDashboard = async ({
                 ON pf.proveedor_id = mt.proveedor_id
             WHERE mt.destino_id::varchar = $1
               AND mt.estado_despacho IS DISTINCT FROM 'CAN'
+              AND ($4::varchar IS NULL OR mt.estado_despacho = $4)
               AND ($5::date IS NULL OR mt.create_date::date >= $5::date)
               AND ($6::date IS NULL OR mt.create_date::date <= $6::date)
         ),
@@ -257,7 +258,7 @@ const obtenerIndicadoresDashboard = async ({
             INNER JOIN proveedores_filtrados pf
                 ON pf.proveedor_id = mt.proveedor_id
             WHERE mt.destino_id::varchar = $1
-              AND mt.estado_despacho = 'DSP'
+              AND mt.estado_despacho IS DISTINCT FROM 'CAN'
               AND pf.tipo_rubro = '003'
               AND EXISTS (
                   SELECT 1
@@ -298,6 +299,75 @@ const obtenerIndicadoresDashboard = async ({
                         OR NULLIF(TRIM(d.temperatura_descarga::text), '') IS NULL
                     )
               )
+        ),
+        volumen_por_rubro AS (
+            SELECT
+                pf.tipo_rubro,
+                COALESCE(SUM(d.pesaje_en_kg), 0) AS volumen_kg
+            FROM despachos_filtrados df
+            INNER JOIN proveedores_filtrados pf
+                ON pf.proveedor_id = df.proveedor_id
+            INNER JOIN sisoxxo."MOV_TRANSAC_DETALLE" d
+                ON d.transac_id = df.transac_id
+            GROUP BY pf.tipo_rubro
+        ),
+        trazabilidad_por_rubro AS (
+            SELECT
+                tipo_rubro,
+                COUNT(*) AS total_lineas,
+                COUNT(*) FILTER (
+                    WHERE
+                        NULLIF(BTRIM(producto_especie::text), '') IS NOT NULL
+                        AND cantidad IS NOT NULL
+                        AND NULLIF(BTRIM(tipo_unid_med::text), '') IS NOT NULL
+                        AND pesaje_en_kg IS NOT NULL
+                        AND (
+                            tipo_rubro <> '001'
+                            OR (
+                                fecha_beneficio_ini IS NOT NULL
+                                AND fecha_beneficio_fin IS NOT NULL
+                                AND NULLIF(BTRIM(nro_guia_nota_venta::text), '') IS NOT NULL
+                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
+                                AND fecha_lote_venci IS NOT NULL
+                            )
+                        )
+                        AND (
+                            tipo_rubro <> '002'
+                            OR (
+                                NULLIF(BTRIM(terminal_origen::text), '') IS NOT NULL
+                                AND NULLIF(BTRIM(temperatura_descarga::text), '') IS NOT NULL
+                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
+                                AND fecha_lote_venci IS NOT NULL
+                            )
+                        )
+                        AND (
+                            tipo_rubro <> '003'
+                            OR (
+                                NULLIF(BTRIM(registro_sanitario::text), '') IS NOT NULL
+                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
+                                AND fecha_lote_venci IS NOT NULL
+                            )
+                        )
+                        AND (
+                            tipo_rubro <> '004'
+                            OR (
+                                NULLIF(BTRIM(procedencia::text), '') IS NOT NULL
+                                AND NULLIF(BTRIM(tipo_despacho::text), '') IS NOT NULL
+                                AND fecha_cosecha IS NOT NULL
+                            )
+                        )
+                ) AS lineas_completas
+            FROM lineas_trazabilidad
+            GROUP BY tipo_rubro
+        ),
+        rubros_dashboard AS (
+            SELECT codigo, descripcion
+            FROM (VALUES
+                ('001'::varchar, 'Carnes y aves'::varchar),
+                ('002'::varchar, 'Pescados y mariscos'::varchar),
+                ('003'::varchar, 'Abarrotes, lácteos y embutidos'::varchar),
+                ('004'::varchar, 'Agro y vegetales'::varchar)
+            ) AS r(codigo, descripcion)
         )
         SELECT
             COALESCE((
@@ -338,7 +408,32 @@ const obtenerIndicadoresDashboard = async ({
                 AS entregas_temperatura_pendiente,
 
             (SELECT cantidad FROM alerta_procedencia)
-                AS entregas_procedencia
+                AS entregas_procedencia,
+
+            COALESCE((
+                SELECT json_agg(
+                    json_build_object(
+                        'tipo_rubro', rd.codigo,
+                        'descripcion', rd.descripcion,
+                        'volumen_kg', COALESCE(vr.volumen_kg, 0),
+                        'trazabilidad_completa',
+                            COALESCE(
+                                ROUND(
+                                    tr.lineas_completas::numeric * 100
+                                    / NULLIF(tr.total_lineas, 0),
+                                    2
+                                ),
+                                0
+                            )
+                    )
+                    ORDER BY rd.codigo
+                )
+                FROM rubros_dashboard rd
+                LEFT JOIN volumen_por_rubro vr
+                    ON vr.tipo_rubro = rd.codigo
+                LEFT JOIN trazabilidad_por_rubro tr
+                    ON tr.tipo_rubro = rd.codigo
+            ), '[]'::json) AS volumen_trazabilidad_por_rubro
     `;
 
     const values = [

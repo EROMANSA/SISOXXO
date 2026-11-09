@@ -342,7 +342,14 @@ const DespachosPage = () => {
                             }
 
                             if (filtrosDetalleDashboard.includes(filtroDashboard)) {
-                                if (estado !== 'DSP') return null;
+                                // Registro Sanitario considera todos los estados,
+                                // excepto los despachos cancelados (CAN).
+                                // Las demás alertas conservan la condición DSP.
+                                if (filtroDashboard === 'REGISTRO_SANITARIO') {
+                                    if (estado === 'CAN') return null;
+                                } else if (estado !== 'DSP') {
+                                    return null;
+                                }
 
                                 // Cada alerta evalúa exclusivamente su campo,
                                 // salvo el filtro histórico del PROVEEDOR, que
@@ -716,7 +723,7 @@ const exportarExcel = async () => {
                                 : filtroDashboard === 'FECHA_VENCIMIENTO_LOTE'
                                     ? 'Se muestran despachos DSP de rubros 001, 003 o 004 con fecha de vencimiento del lote faltante.'
                                     : filtroDashboard === 'REGISTRO_SANITARIO'
-                                        ? 'Se muestran despachos DSP del rubro 003 con registro sanitario faltante.'
+                                        ? 'Se muestran despachos no cancelados del rubro 003 con registro sanitario faltante.'
                                         : filtroDashboard === 'TEMPERATURA_PENDIENTE'
                                             ? 'Se muestran despachos DSP del rubro 002 con terminal de origen o temperatura de descarga faltante.'
                                             : filtroDashboard === 'PROCEDENCIA_FALTANTE'
