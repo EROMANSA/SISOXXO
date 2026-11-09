@@ -168,6 +168,67 @@ valorAlerta: {
 },
 
 
+    filaInferior: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gap: '16px',
+        alignItems: 'stretch'
+    },
+    panelRubros: {
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '10px',
+        padding: '20px',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column'
+    },
+    tituloRubros: {
+        fontSize: '18px',
+        fontWeight: '700',
+        color: '#0F172A',
+        marginBottom: '26px'
+    },
+    filaRubro: {
+        display: 'grid',
+        gridTemplateColumns: 'minmax(150px, 1.45fr) minmax(48px, 0.45fr) minmax(90px, 1fr) minmax(48px, 0.45fr)',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '28px'
+    },
+    nombreRubro: {
+        fontSize: '13px',
+        fontWeight: '600',
+        color: '#334155'
+    },
+    volumenRubro: {
+        fontSize: '14px',
+        fontWeight: '700',
+        color: '#0F172A',
+        textAlign: 'right',
+        whiteSpace: 'nowrap'
+    },
+    barraRubro: {
+        width: '100%',
+        height: '12px',
+        backgroundColor: '#E2E8F0',
+        borderRadius: '999px',
+        overflow: 'hidden'
+    },
+    porcentajeRubro: {
+        fontSize: '14px',
+        fontWeight: '700',
+        color: '#0F172A',
+        textAlign: 'right',
+        whiteSpace: 'nowrap'
+    },
+    leyendaRubro: {
+        fontSize: '11px',
+        color: '#64748B',
+        textAlign: 'right',
+        marginTop: '-20px'
+    },
+
     mensaje: {
         padding: '18px',
         backgroundColor: '#FFFFFF',
@@ -218,8 +279,12 @@ const [indicadores, setIndicadores] = useState({
     alertas_pendientes: 0,
     documentos_vencidos: 0,
     entregas_lote_faltante: 0,
-    entregas_temperatura_pendiente: 0
+    entregas_fecha_vencimiento_lote: 0,
+    entregas_registro_sanitario: 0,
+    entregas_temperatura_pendiente: 0,
+    entregas_procedencia: 0
 });
+const [volumenTrazabilidadRubro, setVolumenTrazabilidadRubro] = useState(null);
 
 
 
@@ -305,10 +370,27 @@ setIndicadores({
     entregas_lote_faltante: Number(
         respuesta?.indicadores?.entregas_lote_faltante ?? 0
     ),
+    entregas_fecha_vencimiento_lote: Number(
+        respuesta?.indicadores?.entregas_fecha_vencimiento_lote ?? 0
+    ),
+    entregas_registro_sanitario: Number(
+        respuesta?.indicadores?.entregas_registro_sanitario ?? 0
+    ),
     entregas_temperatura_pendiente: Number(
         respuesta?.indicadores?.entregas_temperatura_pendiente ?? 0
+    ),
+    entregas_procedencia: Number(
+        respuesta?.indicadores?.entregas_procedencia ?? 0
     )
 });
+
+const rubrosRespuesta =
+    respuesta?.indicadores?.volumen_trazabilidad_por_rubro;
+setVolumenTrazabilidadRubro(
+    Array.isArray(rubrosRespuesta) && rubrosRespuesta.length > 0
+        ? rubrosRespuesta[0]
+        : null
+);
 
 
                 }
@@ -319,6 +401,7 @@ setIndicadores({
                 );
 
                 if (!cancelado) {
+                    setVolumenTrazabilidadRubro(null);
                     setError(
                         'No fue posible obtener los indicadores del dashboard.'
                     );
@@ -344,10 +427,51 @@ setIndicadores({
         setFechaFin('');
     };
 
-    const formatearNumero = (valor) =>
+    const formatearNumero = (valor, decimales = 2) =>
         new Intl.NumberFormat('es-PE', {
-            maximumFractionDigits: 2
+            maximumFractionDigits: decimales
         }).format(valor);
+
+    const filaAlertaRevision = (
+        texto,
+        valor,
+        filtro,
+        estilo,
+        ultimo = false
+    ) => (
+        <div
+            onClick={() => {
+                if (!cargandoIndicadores && valor > 0) {
+                    irAListaDespachos(filtro);
+                }
+            }}
+            role={!cargandoIndicadores && valor > 0 ? 'button' : undefined}
+            tabIndex={!cargandoIndicadores && valor > 0 ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (
+                    !cargandoIndicadores &&
+                    valor > 0 &&
+                    (e.key === 'Enter' || e.key === ' ')
+                ) {
+                    e.preventDefault();
+                    irAListaDespachos(filtro);
+                }
+            }}
+            style={{
+                ...estilos.filaAlerta,
+                ...estilo,
+                marginBottom: ultimo ? 0 : '12px',
+                cursor: !cargandoIndicadores && valor > 0
+                    ? 'pointer'
+                    : 'default'
+            }}
+        >
+            <div style={estilos.textoAlerta}>{texto}</div>
+            <div style={estilos.valorAlerta}>
+                {cargandoIndicadores ? '...' : formatearNumero(valor, 0)}
+            </div>
+        </div>
+    );
 
     return (
         <div style={estilos.pageContainer}>
@@ -461,7 +585,10 @@ setIndicadores({
                 </div>
             ) : (
                 <>
-                    <div style={estilos.filaTarjetas}>
+                    <div
+                        className="proveedor-fila-tarjetas"
+                        style={estilos.filaTarjetas}
+                    >
 
                         {/* TARJETA: VOLUMEN */}
                         <div style={estilos.tarjeta}>
@@ -473,18 +600,18 @@ setIndicadores({
                                 {cargandoIndicadores
                                 ? '...'
                                 : formatearNumero(
-                                    indicadores.volumen_registrado
+                                    indicadores.volumen_registrado / 1000
                                 )}
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Kilogramos (kg)
+                                Toneladas (Tn)
                             </div>
 
                         </div>
 
                         {/* TARJETA: ENTREGAS */}
-                        <div snClick={() => {
+                        <div onClick={() => {
     if (
         !cargandoIndicadores &&
         indicadores.entregas_registradas > 0
@@ -500,10 +627,6 @@ style={{
             ? 'pointer'
             : 'default'
 }}>
-                                o
-
-
-
                             <div style={estilos.tarjetaTitulo}>
                                 Entregas Registradas
                             </div>
@@ -536,7 +659,7 @@ style={{
                             </div>
 
                             <div style={estilos.tarjetaUnidad}>
-                                Entregados respecto a Programados
+                                Líneas incompletas respecto al total de líneas
                             </div>
                         </div>
 
@@ -575,99 +698,161 @@ style={{
                         </div>
                     </div> 
 
-                        {/* SECCIÓN: ALERTAS PARA REVISIÓN */}
-                        <div style={estilos.panelAlertas}>
+                        {/* SECCIÓN INFERIOR: VOLUMEN POR RUBRO Y ALERTAS */}
+                        <div
+                            className="proveedor-fila-inferior"
+                            style={estilos.filaInferior}
+                        >
+                            <div style={estilos.panelRubros}>
+                                <div style={estilos.tituloRubros}>
+                                    VOLUMEN Y TRAZABILIDAD POR RUBRO
+                                </div>
 
-                            <div style={estilos.tituloAlertas}>
-                                ALERTAS PARA REVISIÓN
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'minmax(150px, 1.45fr) minmax(48px, 0.45fr) minmax(90px, 1fr) minmax(48px, 0.45fr)',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    marginTop: '-18px',
+                                    marginBottom: '18px'
+                                }}>
+                                    <div />
+                                    <div style={{
+                                        fontSize: '11px',
+                                        color: '#64748B',
+                                        textAlign: 'right',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        Volumen en toneladas
+                                    </div>
+                                    <div />
+                                    <div />
+                                </div>
+
+                                {(() => {
+                                    const rubro = volumenTrazabilidadRubro || {};
+                                    const volumenToneladas =
+                                        Number(rubro.volumen_kg ?? 0) / 1000;
+                                    const porcentaje = Math.min(
+                                        100,
+                                        Math.max(
+                                            0,
+                                            Number(rubro.trazabilidad_completa ?? 0)
+                                        )
+                                    );
+
+                                    return (
+                                        <div style={estilos.filaRubro}>
+                                            <div style={estilos.nombreRubro}>
+                                                {rubro.descripcion || 'Rubro del proveedor'}
+                                            </div>
+                                            <div style={estilos.volumenRubro}>
+                                                {cargandoIndicadores
+                                                    ? '...'
+                                                    : formatearNumero(volumenToneladas)}
+                                            </div>
+                                            <div style={estilos.barraRubro}>
+                                                <div
+                                                    style={{
+                                                        width: `${porcentaje}%`,
+                                                        height: '100%',
+                                                        backgroundColor: '#159A91',
+                                                        borderRadius: '999px',
+                                                        transition: 'width 0.25s ease'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={estilos.porcentajeRubro}>
+                                                {cargandoIndicadores
+                                                    ? '...'
+                                                    : `${formatearNumero(porcentaje)}%`}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                <div style={estilos.leyendaRubro}>
+                                    Completitud de trazabilidad
+                                </div>
                             </div>
-                            {/* DOCUMENTOS VENCIDOS */}
-                            <div
-                                style={{
-                                    ...estilos.filaAlerta,
-                                    ...estilos.alertaDocumento}}>
 
+                            <div style={estilos.panelAlertas}>
+                                <div style={estilos.tituloAlertas}>
+                                    ALERTAS PARA REVISIÓN
+                                </div>
+
+                                <div
+                                    style={{
+                                        ...estilos.filaAlerta,
+                                        ...estilos.alertaDocumento
+                                    }}
+                                >
                                     <div style={estilos.textoAlerta}>
                                         Perfil proveedor: documento vencido
                                     </div>
-
                                     <div style={estilos.valorAlerta}>
                                         {cargandoIndicadores
-                                        ? '...'
-                                        : formatearNumero(
-                                            indicadores.documentos_vencidos
-                                        )}
+                                            ? '...'
+                                            : formatearNumero(
+                                                indicadores.documentos_vencidos,
+                                                0
+                                            )}
                                     </div>
+                                </div>
+
+                                {filaAlertaRevision(
+                                    'Entrega: lote faltante',
+                                    indicadores.entregas_lote_faltante,
+                                    'LOTE_FALTANTE',
+                                    estilos.alertaLote
+                                )}
+
+                                {filaAlertaRevision(
+                                    'Entrega: fecha vencimiento lote',
+                                    indicadores.entregas_fecha_vencimiento_lote,
+                                    'FECHA_VENCIMIENTO_LOTE',
+                                    estilos.alertaLote
+                                )}
+
+                                {filaAlertaRevision(
+                                    'Entrega: registro sanitario',
+                                    indicadores.entregas_registro_sanitario,
+                                    'REGISTRO_SANITARIO',
+                                    estilos.alertaLote
+                                )}
+
+                                {filaAlertaRevision(
+                                    'Entrega: temperatura por revisar',
+                                    indicadores.entregas_temperatura_pendiente,
+                                    'TEMPERATURA_PENDIENTE',
+                                    estilos.alertaTemperatura
+                                )}
+
+                                {filaAlertaRevision(
+                                    'Entrega: procedencia',
+                                    indicadores.entregas_procedencia,
+                                    'PROCEDENCIA_FALTANTE',
+                                    estilos.alertaLote,
+                                    true
+                                )}
                             </div>
-
-                            {/* PROCEDENCIA / LOTE FALTANTE */}
-                            <div
-                                onClick={() => {
-    if (
-        !cargandoIndicadores &&
-        indicadores.entregas_lote_faltante > 0
-    ) {
-        irAListaDespachos('LOTE_FALTANTE');
-    }
-}}
-style={{
-    ...estilos.filaAlerta,
-    ...estilos.alertaLote,
-    cursor:
-        !cargandoIndicadores &&
-        indicadores.entregas_lote_faltante > 0
-            ? 'pointer'
-            : 'default'
-}}>
-                                <div style={estilos.textoAlerta}>
-                                    Entrega: procedencia/lote faltante
-                                </div>
-
-                                <div style={estilos.valorAlerta}>
-                                    {cargandoIndicadores
-                                        ? '...'
-                                        : formatearNumero(
-                                            indicadores.entregas_lote_faltante
-                                        )}
-                                </div>
-                            </div>
-
-                            {/* TEMPERATURA POR REVISAR */}
-                            <div
-                                onClick={() => {
-    if (
-        !cargandoIndicadores &&
-        indicadores.entregas_temperatura_pendiente > 0
-    ) {
-        irAListaDespachos('TEMPERATURA_PENDIENTE');
-    }
-}}
-style={{
-    ...estilos.filaAlerta,
-    ...estilos.alertaTemperatura,
-    marginBottom: 0,
-    cursor:
-        !cargandoIndicadores &&
-        indicadores.entregas_temperatura_pendiente > 0
-            ? 'pointer'
-            : 'default'
-}}>
-                                <div style={estilos.textoAlerta}>
-                                    Entrega: temperatura por revisar
-                                </div>
-
-                                <div style={estilos.valorAlerta}>
-                                    {cargandoIndicadores
-                                        ? '...'
-                                        : formatearNumero(
-                                            indicadores.entregas_temperatura_pendiente
-                                        )}
-                                </div>
-                            </div>
-                             </div>
+                        </div>
                          </>   
                 
             )}
+
+            <style>{`
+                @media (max-width: 900px) {
+                    .proveedor-fila-inferior {
+                        grid-template-columns: minmax(0, 1fr) !important;
+                    }
+                }
+                @media (max-width: 650px) {
+                    .proveedor-fila-tarjetas {
+                        grid-template-columns: minmax(0, 1fr) !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 };

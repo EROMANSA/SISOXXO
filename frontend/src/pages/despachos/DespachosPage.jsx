@@ -284,7 +284,7 @@ const DespachosPage = () => {
 
             const requiereDetalleProveedor =
                 rol === 'PROVEEDOR' &&
-                ['LOTE_FALTANTE', 'TEMPERATURA_PENDIENTE'].includes(filtroDashboard);
+                filtrosDetalleDashboard.includes(filtroDashboard);
 
             if (requiereDetalleConsultor || requiereDetalleProveedor) {
                 setCargandoFiltroDashboard(true);

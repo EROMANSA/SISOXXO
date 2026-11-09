@@ -317,46 +317,55 @@ const obtenerIndicadoresDashboard = async ({
                 COUNT(*) AS total_lineas,
                 COUNT(*) FILTER (
                     WHERE
-                        NULLIF(BTRIM(producto_especie::text), '') IS NOT NULL
-                        AND cantidad IS NOT NULL
-                        AND NULLIF(BTRIM(tipo_unid_med::text), '') IS NOT NULL
-                        AND pesaje_en_kg IS NOT NULL
-                        AND (
-                            tipo_rubro <> '001'
-                            OR (
-                                fecha_beneficio_ini IS NOT NULL
-                                AND fecha_beneficio_fin IS NOT NULL
-                                AND NULLIF(BTRIM(nro_guia_nota_venta::text), '') IS NOT NULL
-                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
-                                AND fecha_lote_venci IS NOT NULL
+                        -- Campos comunes obligatorios
+                        NULLIF(BTRIM(producto_especie::text), '') IS NULL
+                        OR cantidad IS NULL
+                        OR NULLIF(BTRIM(tipo_unid_med::text), '') IS NULL
+                        OR pesaje_en_kg IS NULL
+
+                        -- Rubro 001: Carnes y aves
+                        OR (
+                            tipo_rubro = '001'
+                            AND (
+                                fecha_beneficio_ini IS NULL
+                                OR fecha_beneficio_fin IS NULL
+                                OR NULLIF(BTRIM(nro_guia_nota_venta::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
                             )
                         )
-                        AND (
-                            tipo_rubro <> '002'
-                            OR (
-                                NULLIF(BTRIM(terminal_origen::text), '') IS NOT NULL
-                                AND NULLIF(BTRIM(temperatura_descarga::text), '') IS NOT NULL
-                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
-                                AND fecha_lote_venci IS NOT NULL
+
+                        -- Rubro 002: Pescados y mariscos
+                        OR (
+                            tipo_rubro = '002'
+                            AND (
+                                NULLIF(BTRIM(terminal_origen::text), '') IS NULL
+                                OR NULLIF(BTRIM(temperatura_descarga::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
                             )
                         )
-                        AND (
-                            tipo_rubro <> '003'
-                            OR (
-                                NULLIF(BTRIM(registro_sanitario::text), '') IS NOT NULL
-                                AND NULLIF(BTRIM(codigo_nro_lote::text), '') IS NOT NULL
-                                AND fecha_lote_venci IS NOT NULL
+
+                        -- Rubro 003: Abarrotes, lácteos y embutidos
+                        OR (
+                            tipo_rubro = '003'
+                            AND (
+                                NULLIF(BTRIM(registro_sanitario::text), '') IS NULL
+                                OR NULLIF(BTRIM(codigo_nro_lote::text), '') IS NULL
+                                OR fecha_lote_venci IS NULL
                             )
                         )
-                        AND (
-                            tipo_rubro <> '004'
-                            OR (
-                                NULLIF(BTRIM(procedencia::text), '') IS NOT NULL
-                                AND NULLIF(BTRIM(tipo_despacho::text), '') IS NOT NULL
-                                AND fecha_cosecha IS NOT NULL
+
+                        -- Rubro 004: Agro y vegetales
+                        OR (
+                            tipo_rubro = '004'
+                            AND (
+                                NULLIF(BTRIM(procedencia::text), '') IS NULL
+                                OR NULLIF(BTRIM(tipo_despacho::text), '') IS NULL
+                                OR fecha_cosecha IS NULL
                             )
                         )
-                ) AS lineas_completas
+                ) AS lineas_incompletas
             FROM lineas_trazabilidad
             GROUP BY tipo_rubro
         ),
@@ -419,7 +428,7 @@ const obtenerIndicadoresDashboard = async ({
                         'trazabilidad_completa',
                             COALESCE(
                                 ROUND(
-                                    tr.lineas_completas::numeric * 100
+                                    tr.lineas_incompletas::numeric * 100
                                     / NULLIF(tr.total_lineas, 0),
                                     2
                                 ),
