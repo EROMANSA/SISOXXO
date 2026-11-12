@@ -122,28 +122,28 @@ tarjetaAlertaUnidad: {
     marginTop: '8px'
 },
 
-panelAlertas: {
-    backgroundColor: '#FFFFFF',
-    border: '1px solid #E2E8F0',
-    borderRadius: '10px',
-    padding: '20px',
-    marginTop: '20px'
-},
-tituloAlertas: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: '18px'
-},
-filaAlerta: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '16px',
-    padding: '18px 22px',
-    borderRadius: '8px',
-    marginBottom: '12px'
-},
+    panelAlertas: {
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '10px',
+        padding: '16px',
+        minWidth: 0
+    },
+    tituloAlertas: {
+        fontSize: '18px',
+        fontWeight: '700',
+        color: '#0F172A',
+        marginBottom: '14px'
+    },
+    filaAlerta: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        padding: '8px 16px',
+        borderRadius: '8px',
+        marginBottom: '8px'
+    },
 alertaDocumento: {
     backgroundColor: '#FCE7E7',
     color: '#B91C1C'
@@ -181,7 +181,8 @@ valorAlerta: {
         padding: '20px',
         minWidth: 0,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        justifyContent: 'flex-start'
     },
     tituloRubros: {
         fontSize: '18px',
@@ -226,7 +227,8 @@ valorAlerta: {
         fontSize: '11px',
         color: '#64748B',
         textAlign: 'right',
-        marginTop: '-20px'
+        marginTop: '-20px',
+        marginBottom: '12px'
     },
 
     mensaje: {
@@ -664,22 +666,7 @@ style={{
                         </div>
 
                         {/* TARJETA: ALERTAS PENDIENTES */}
-                        <div onClick={() => {
-    if (
-        !cargandoIndicadores &&
-        indicadores.alertas_pendientes > 0
-    ) {
-        irAListaDespachos('ALERTAS_PENDIENTES');
-    }
-}}
-style={{
-    ...estilos.tarjetaAlerta,
-    cursor:
-        !cargandoIndicadores &&
-        indicadores.alertas_pendientes > 0
-            ? 'pointer'
-            : 'default'
-}}>
+                        <div style={estilos.tarjetaAlerta}>
 
                             <div style={estilos.tarjetaAlertaTitulo}>
                                 Alertas Pendientes
@@ -730,45 +717,78 @@ style={{
                                 </div>
 
                                 {(() => {
-                                    const rubro = volumenTrazabilidadRubro || {};
-                                    const volumenToneladas =
-                                        Number(rubro.volumen_kg ?? 0) / 1000;
-                                    const porcentaje = Math.min(
-                                        100,
-                                        Math.max(
-                                            0,
-                                            Number(rubro.trazabilidad_completa ?? 0)
-                                        )
+                                    // Se muestran siempre los cuatro rubros.
+                                    // Los datos recibidos corresponden al rubro del proveedor;
+                                    // los demás rubros se presentan con valores en cero.
+                                    const rubrosBase = [
+                                        'Carnes y aves',
+                                        'Pescados y mariscos',
+                                        'Abarrotes, lácteos y embutidos',
+                                        'Agro y vegetales'
+                                    ];
+
+                                    const normalizar = (texto) =>
+                                        String(texto || '')
+                                            .normalize('NFD')
+                                            .replace(/[\\u0300-\\u036f]/g, '')
+                                            .toLowerCase()
+                                            .trim();
+
+                                    const rubroProveedor = volumenTrazabilidadRubro || {};
+                                    const descripcionProveedor = normalizar(
+                                        rubroProveedor.descripcion
                                     );
 
-                                    return (
-                                        <div style={estilos.filaRubro}>
-                                            <div style={estilos.nombreRubro}>
-                                                {rubro.descripcion || 'Rubro del proveedor'}
+                                    return rubrosBase.map((descripcion) => {
+                                        const esRubroProveedor =
+                                            descripcionProveedor === normalizar(descripcion);
+
+                                        const volumenKg = esRubroProveedor
+                                            ? Number(rubroProveedor.volumen_kg ?? 0)
+                                            : 0;
+
+                                        const porcentaje = esRubroProveedor
+                                            ? Math.min(
+                                                100,
+                                                Math.max(
+                                                    0,
+                                                    Number(rubroProveedor.trazabilidad_completa ?? 0)
+                                                )
+                                            )
+                                            : 0;
+
+                                        return (
+                                            <div
+                                                key={descripcion}
+                                                style={estilos.filaRubro}
+                                            >
+                                                <div style={estilos.nombreRubro}>
+                                                    {descripcion}
+                                                </div>
+                                                <div style={estilos.volumenRubro}>
+                                                    {cargandoIndicadores
+                                                        ? '...'
+                                                        : formatearNumero(volumenKg / 1000)}
+                                                </div>
+                                                <div style={estilos.barraRubro}>
+                                                    <div
+                                                        style={{
+                                                            width: `${porcentaje}%`,
+                                                            height: '100%',
+                                                            backgroundColor: '#159A91',
+                                                            borderRadius: '999px',
+                                                            transition: 'width 0.25s ease'
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div style={estilos.porcentajeRubro}>
+                                                    {cargandoIndicadores
+                                                        ? '...'
+                                                        : `${formatearNumero(porcentaje)}%`}
+                                                </div>
                                             </div>
-                                            <div style={estilos.volumenRubro}>
-                                                {cargandoIndicadores
-                                                    ? '...'
-                                                    : formatearNumero(volumenToneladas)}
-                                            </div>
-                                            <div style={estilos.barraRubro}>
-                                                <div
-                                                    style={{
-                                                        width: `${porcentaje}%`,
-                                                        height: '100%',
-                                                        backgroundColor: '#159A91',
-                                                        borderRadius: '999px',
-                                                        transition: 'width 0.25s ease'
-                                                    }}
-                                                />
-                                            </div>
-                                            <div style={estilos.porcentajeRubro}>
-                                                {cargandoIndicadores
-                                                    ? '...'
-                                                    : `${formatearNumero(porcentaje)}%`}
-                                            </div>
-                                        </div>
-                                    );
+                                        );
+                                    });
                                 })()}
 
                                 <div style={estilos.leyendaRubro}>

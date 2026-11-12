@@ -398,8 +398,14 @@ const obtenerIndicadoresDashboard = async ({
                 FROM trazabilidad
             ), 0) AS trazabilidad_completa,
 
-            (SELECT cantidad FROM alertas_pendientes)
-                AS alertas_pendientes,
+            (
+                COALESCE((SELECT cantidad FROM documentos_vencidos), 0)
+                + COALESCE((SELECT cantidad FROM alerta_lote_faltante), 0)
+                + COALESCE((SELECT cantidad FROM alerta_fecha_vencimiento_lote), 0)
+                + COALESCE((SELECT cantidad FROM alerta_registro_sanitario), 0)
+                + COALESCE((SELECT cantidad FROM alerta_temperatura), 0)
+                + COALESCE((SELECT cantidad FROM alerta_procedencia), 0)
+            ) AS alertas_pendientes,
 
             (SELECT cantidad FROM documentos_vencidos)
                 AS documentos_vencidos,

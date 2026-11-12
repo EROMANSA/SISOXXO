@@ -201,23 +201,23 @@ const estilos = {
         backgroundColor: '#FFFFFF',
         border: '1px solid #E2E8F0',
         borderRadius: '10px',
-        padding: '20px',
+        padding: '16px',
         minWidth: 0
     },
     tituloAlertas: {
         fontSize: '18px',
         fontWeight: 700,
         color: '#0F172A',
-        marginBottom: '18px'
+        marginBottom: '14px'
     },
     filaAlerta: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '16px',
-        padding: '18px 22px',
+        padding: '8px 16px',
         borderRadius: '8px',
-        marginBottom: '12px'
+        marginBottom: '8px'
     },
     alertaDocumento: {
         backgroundColor: '#FCE7E7',
@@ -727,28 +727,7 @@ const filaAlertaRevision = (titulo, valor, filtro, estiloAlerta, sinMargen = fal
     ' %'
 )}
 
-                        <div
-                            onClick={() => {
-                                if (!cargandoIndicadores && indicadores.alertas_pendientes > 0) {
-                                    irAListaDespachos('ALERTAS_PENDIENTES');
-                                }
-                            }}
-                            role={!cargandoIndicadores && indicadores.alertas_pendientes > 0 ? 'button' : undefined}
-                            tabIndex={!cargandoIndicadores && indicadores.alertas_pendientes > 0 ? 0 : undefined}
-                            onKeyDown={(e) => {
-                                if (!cargandoIndicadores && indicadores.alertas_pendientes > 0 &&
-                                    (e.key === 'Enter' || e.key === ' ')) {
-                                    e.preventDefault();
-                                    irAListaDespachos('ALERTAS_PENDIENTES');
-                                }
-                            }}
-                            style={{
-                                ...estilos.tarjetaAlerta,
-                                cursor: !cargandoIndicadores && indicadores.alertas_pendientes > 0
-                                    ? 'pointer'
-                                    : 'default'
-                            }}
-                        >
+                        <div style={estilos.tarjetaAlerta}>
                             <div style={estilos.tituloAlerta}>
                                 Alertas Pendientes
                             </div>
