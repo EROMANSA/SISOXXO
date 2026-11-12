@@ -91,7 +91,7 @@ function Sidebar() {
                     marginBottom: '6px'
                 }}
             >
-                SISOXXO
+                Traza360
             </div>
 
             <div

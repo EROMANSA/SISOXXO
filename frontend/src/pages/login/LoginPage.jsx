@@ -153,7 +153,7 @@ function LoginPage() {
                         color: '#0F172A'
                     }}
                 >
-                    SISOXXO
+                    Traza360
                 </h1>
 
                 <p
@@ -163,7 +163,7 @@ function LoginPage() {
                         color: '#64748B'
                     }}
                 >
-                    Gestión de Despachos
+                    Gestión de Despacho
                 </p>
 
                 <form onSubmit={handleSubmit}>
